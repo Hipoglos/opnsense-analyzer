@@ -1,0 +1,33 @@
+name: opnsense-analyzer
+
+services:
+  opnsense-analyzer:
+    build:
+      context: .
+    image: opnsense-analyzer:latest
+    container_name: opnsense-analyzer
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      # Logs land in /srv/opnsense-analyzer/data/logs — nowhere else on the host
+      - ./data/logs:/app/logs:rw
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "com.opnsense-analyzer.description=OPNSense Configuration Security Analyzer"
+      - "com.opnsense-analyzer.install-dir=/srv/opnsense-analyzer"
