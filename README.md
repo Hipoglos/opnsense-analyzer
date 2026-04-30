@@ -33,6 +33,11 @@ Open: **http://localhost:8081**
 
 ---
 
+## Screenshot
+<img width="818" height="783" alt="image" src="https://github.com/user-attachments/assets/289e97cf-f471-4693-9fce-5a20546a6f68" />
+
+---
+
 ## 🐳 Manual Docker
 
 ```bash
