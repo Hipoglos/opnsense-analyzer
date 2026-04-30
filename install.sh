@@ -4,7 +4,7 @@
 # Everything lives under /srv/opnsense-analyzer/ — nothing scattered.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Hipoglos/opnsense-analyzer/main/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/opnsense-analyzer/main/install.sh | sudo bash
 #   PORT=9090 curl -fsSL ... | sudo bash   # custom port
 # ============================================================
 set -euo pipefail
@@ -15,7 +15,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-REPO_URL="https://github.com/Hipoglos/opnsense-analyzer"
+REPO_URL="https://github.com/YOUR_USERNAME/opnsense-analyzer"
 INSTALL_DIR="/srv/opnsense-analyzer"
 PORT="${PORT:-8080}"
 

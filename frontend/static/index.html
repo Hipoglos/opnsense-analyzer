@@ -8,88 +8,91 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 :root{
-  --bg:#0a0c0f;--bg2:#0f1217;--bg3:#141820;--bg4:#1a2030;
+  --bg:#0a0c0f;--bg2:#0f1217;--bg3:#141820;--bg4:#1a2030;--bg5:#0d1016;
   --border:#1e2840;--border2:#243050;
-  --text:#c8d4e8;--text2:#7a90b0;--text3:#4a5a7a;
+  --text:#c8d4e8;--text2:#7a90b0;--text3:#4a5a7a;--text4:#2a3a5a;
   --accent:#3d7fff;--accent2:#1a4acc;
   --critical:#ff3860;--high:#ff6b35;--medium:#ffb830;--low:#36d399;--info:#3d7fff;
   --wan:#ff6b35;--vpn:#a855f7;--nat:#06b6d4;--pass:#36d399;--block:#ff3860;
-  --glow:0 0 20px rgba(61,127,255,0.15);
+  --glow:0 0 24px rgba(61,127,255,0.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(61,127,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(61,127,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(61,127,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(61,127,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
 
 /* HEADER */
-header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:rgba(10,12,15,0.97);backdrop-filter:blur(10px)}
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:12px 28px;border-bottom:1px solid var(--border);background:rgba(10,12,15,0.98);backdrop-filter:blur(12px)}
 .logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
-.logo-text{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--text);letter-spacing:.05em}
-.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
-.header-right{display:flex;align-items:center;gap:14px}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 6px var(--low);animation:pulse 2s infinite}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-text{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.06em}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:12px}
 .security-notice{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 6px var(--low);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* MAIN */
-.app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 24px 48px}
+/* LAYOUT */
+.app{position:relative;z-index:1;max-width:1700px;margin:0 auto;padding:0 24px 56px}
 
 /* UPLOAD */
-#upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 64px);gap:36px}
-.upload-title{font-size:40px;font-weight:300;letter-spacing:-.02em;color:var(--text);line-height:1.2;text-align:center}
+#upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 58px);gap:32px}
+.upload-title{font-size:38px;font-weight:300;letter-spacing:-.02em;text-align:center;line-height:1.2}
 .upload-title span{color:var(--accent);font-weight:600}
-.upload-subtitle{margin-top:10px;font-size:15px;color:var(--text2);max-width:500px;line-height:1.6;text-align:center}
-.upload-zone{width:540px;max-width:100%;border:2px dashed var(--border2);border-radius:16px;padding:48px 36px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg2);position:relative;overflow:hidden}
+.upload-subtitle{margin-top:8px;font-size:14px;color:var(--text2);max-width:480px;line-height:1.65;text-align:center}
+.upload-zone{width:520px;max-width:100%;border:2px dashed var(--border2);border-radius:16px;padding:48px 36px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg2);position:relative;overflow:hidden}
 .upload-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(61,127,255,.05),transparent 70%);pointer-events:none}
-.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(61,127,255,.04);box-shadow:var(--glow)}
-.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.upload-icon{font-size:44px;margin-bottom:14px;display:block}
-.upload-label{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);box-shadow:var(--glow);background:rgba(61,127,255,.03)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{font-size:42px;margin-bottom:12px;display:block}
+.upload-label{font-size:15px;font-weight:500;margin-bottom:6px}
 .upload-hint{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
-.upload-privacy{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
-.privacy-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text3)}
-.privacy-item .icon{color:var(--low);font-size:13px}
+.upload-privacy{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.privacy-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.privacy-item .icon{color:var(--low)}
 
 /* LOADING */
-#loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 64px);gap:20px}
-.spinner{width:52px;height:52px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+#loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 58px);gap:18px}
+.spinner{width:48px;height:48px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-family:'IBM Plex Mono',monospace;color:var(--text2);font-size:13px;letter-spacing:.1em}
-.loading-steps{display:flex;flex-direction:column;gap:7px}
-.loading-step{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace;opacity:0;transform:translateX(-8px);transition:all .4s}
+.loading-steps{display:flex;flex-direction:column;gap:6px}
+.loading-step{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;opacity:0;transform:translateX(-8px);transition:all .4s}
 .loading-step.active{opacity:1;transform:none;color:var(--accent)}
-.loading-step.done{opacity:.5;transform:none;color:var(--low)}
+.loading-step.done{opacity:.45;transform:none;color:var(--low)}
 
 /* DASHBOARD */
-#dashboard{display:none;flex-direction:column;gap:22px;padding-top:26px}
-.dash-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-.dash-meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3)}
+#dashboard{display:none;flex-direction:column;gap:20px;padding-top:24px}
+.dash-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dash-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap}
 .dash-meta strong{color:var(--text2)}
-.btn-reset{padding:7px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
+.meta-pill{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 9px}
+.btn-reset{padding:6px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
 .btn-reset:hover{border-color:var(--accent);color:var(--accent)}
+.btn-export{padding:6px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif;margin-left:6px}
+.btn-export:hover{border-color:var(--low);color:var(--low)}
 
 /* SCORE ROW */
-.score-row{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:stretch}
-.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
-.score-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 100%,rgba(61,127,255,.05),transparent 70%);pointer-events:none}
-.score-ring{position:relative;width:90px;height:90px}
+.score-row{display:grid;grid-template-columns:190px 1fr;gap:16px}
+.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;position:relative;overflow:hidden}
+.score-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 100%,rgba(61,127,255,.04),transparent 70%);pointer-events:none}
+.score-ring{position:relative;width:88px;height:88px}
 .score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .score-ring circle{fill:none;stroke-width:6}
 .score-ring .bg-circle{stroke:var(--border)}
 .score-ring .fg-circle{stroke-linecap:round;transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)}
-.score-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;font-family:'IBM Plex Mono',monospace}
-.score-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace}
-.score-grade{font-size:13px;font-weight:500}
+.score-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.score-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;font-family:'IBM Plex Mono',monospace}
+.score-grade{font-size:12px;font-weight:500;text-align:center}
 
-.findings-summary{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center}
-.sev-badge{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:all .2s}
-.sev-badge:hover{filter:brightness(1.2)}
-.sev-badge.critical{background:rgba(255,56,96,.08);border-color:rgba(255,56,96,.2)}
-.sev-badge.high{background:rgba(255,107,53,.08);border-color:rgba(255,107,53,.2)}
-.sev-badge.medium{background:rgba(255,184,48,.08);border-color:rgba(255,184,48,.2)}
-.sev-badge.low{background:rgba(54,211,153,.08);border-color:rgba(54,211,153,.2)}
-.sev-badge.info{background:rgba(61,127,255,.08);border-color:rgba(61,127,255,.2)}
-.sev-count{font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1}
+.findings-summary{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.sev-badge{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 8px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:all .2s}
+.sev-badge:hover{filter:brightness(1.15)}
+.sev-badge.critical{background:rgba(255,56,96,.07);border-color:rgba(255,56,96,.18)}
+.sev-badge.high{background:rgba(255,107,53,.07);border-color:rgba(255,107,53,.18)}
+.sev-badge.medium{background:rgba(255,184,48,.07);border-color:rgba(255,184,48,.18)}
+.sev-badge.low{background:rgba(54,211,153,.07);border-color:rgba(54,211,153,.18)}
+.sev-badge.info{background:rgba(61,127,255,.07);border-color:rgba(61,127,255,.18)}
+.sev-count{font-size:30px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1}
 .sev-badge.critical .sev-count{color:var(--critical)}
 .sev-badge.high .sev-count{color:var(--high)}
 .sev-badge.medium .sev-count{color:var(--medium)}
@@ -98,120 +101,167 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .sev-name{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:'IBM Plex Mono',monospace}
 
 /* TABS */
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{padding:9px 18px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
+.tabs{display:flex;gap:1px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
 .tab:hover{color:var(--text2)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
 /* CARDS */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.card-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:14px;font-weight:600;letter-spacing:.03em;color:var(--text)}
-.card-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
-.card-body{padding:22px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.card:last-child{margin-bottom:0}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600;letter-spacing:.03em}
+.card-subtitle{font-size:11px;color:var(--text3);margin-top:2px}
+.card-body{padding:20px}
 
 /* FINDINGS */
-.finding-item{display:grid;grid-template-columns:96px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.finding-item{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
 .finding-item:last-child{border-bottom:none}
-.finding-sev{display:inline-flex;align-items:center;justify-content:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;align-self:flex-start;margin-top:2px}
-.sev-pill-critical{background:rgba(255,56,96,.15);color:var(--critical)}
-.sev-pill-high{background:rgba(255,107,53,.15);color:var(--high)}
-.sev-pill-medium{background:rgba(255,184,48,.15);color:var(--medium)}
-.sev-pill-low{background:rgba(54,211,153,.15);color:var(--low)}
-.sev-pill-info{background:rgba(61,127,255,.15);color:var(--info)}
-.finding-category{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em}
-.finding-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
-.finding-detail{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px}
-.finding-rec{font-size:12px;color:var(--low);display:flex;align-items:flex-start;gap:5px;line-height:1.5}
+.finding-sev{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.07em;align-self:flex-start;margin-top:2px}
+.sev-pill-critical{background:rgba(255,56,96,.14);color:var(--critical)}
+.sev-pill-high{background:rgba(255,107,53,.14);color:var(--high)}
+.sev-pill-medium{background:rgba(255,184,48,.14);color:var(--medium)}
+.sev-pill-low{background:rgba(54,211,153,.14);color:var(--low)}
+.sev-pill-info{background:rgba(61,127,255,.14);color:var(--info)}
+.finding-category{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.08em}
+.finding-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.finding-detail{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:5px}
+.finding-rec{font-size:11px;color:var(--low);display:flex;align-items:flex-start;gap:5px;line-height:1.5}
 
-.filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
-.filter-btn{padding:4px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filter-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
 .filter-btn:hover{border-color:var(--text3);color:var(--text2)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.search-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 12px;color:var(--text);font-size:12px;font-family:'IBM Plex Mono',monospace;outline:none;width:200px;transition:border-color .2s;margin-left:auto}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text4)}
 
 /* TABLES */
-.rules-table{width:100%;border-collapse:collapse;font-size:13px}
-.rules-table th{text-align:left;padding:9px 11px;font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500}
-.rules-table td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
-.rules-table tr:last-child td{border-bottom:none}
-.rules-table tr:hover td{background:rgba(255,255,255,.02)}
-.rules-table tr.rule-disabled td{opacity:.4}
-.action-pass{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(54,211,153,.12);color:var(--pass);text-transform:uppercase}
-.action-block{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,56,96,.12);color:var(--block);text-transform:uppercase}
-.action-reject{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,107,53,.12);color:var(--high);text-transform:uppercase}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:8px 10px;font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.015)}
+.tbl tr.row-disabled td{opacity:.38}
+.action-pass{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(54,211,153,.1);color:var(--pass);text-transform:uppercase}
+.action-block{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,56,96,.1);color:var(--block);text-transform:uppercase}
+.action-reject{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,107,53,.1);color:var(--high);text-transform:uppercase}
 .tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
-.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.any-warn{color:var(--critical)}
+.dst-warn{color:var(--medium)}
+
+/* PAGINATION */
+.pagination{display:flex;gap:6px;align-items:center;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--border)}
+.page-btn{padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:11px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
+.page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.page-btn:disabled{opacity:.3;cursor:default}
+.page-info{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
 
 /* FLOW MAP */
 #flow-map-container{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-#flow-map{width:100%;height:560px;cursor:grab;overflow:hidden}
+#flow-map{width:100%;height:580px;cursor:grab;overflow:hidden}
 #flow-map:active{cursor:grabbing}
-.flow-legend{display:flex;gap:18px;padding:14px 22px;border-top:1px solid var(--border);flex-wrap:wrap}
-.legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text3)}
-.legend-dot{width:10px;height:10px;border-radius:3px}
+.flow-legend{display:flex;gap:16px;padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.legend-dot{width:9px;height:9px;border-radius:3px}
+.legend-line{width:18px;height:2.5px;border-radius:2px}
 
-/* INTERFACES GRID */
-.ifaces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.iface-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .2s}
-.iface-card:hover{border-color:var(--border2)}
-.iface-name{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.iface-type-badge{font-size:9px;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
-.iface-type-wan{background:rgba(255,107,53,.15);color:var(--wan)}
-.iface-type-internal{background:rgba(61,127,255,.12);color:var(--accent)}
-.iface-type-wireguard{background:rgba(168,85,247,.12);color:var(--vpn)}
-.iface-ip{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text2);margin-top:8px}
-.iface-key{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:3px}
-.iface-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
-.flag-ok{font-size:10px;padding:2px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(54,211,153,.1);color:var(--low);border:1px solid rgba(54,211,153,.2)}
-.flag-warn{font-size:10px;padding:2px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(255,184,48,.1);color:var(--medium);border:1px solid rgba(255,184,48,.2)}
-
-/* VPN */
-.vpn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:22px}
-.stat-mini{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
-.stat-mini-val{font-size:30px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--accent);line-height:1;margin-bottom:5px}
+/* STAT GRIDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-mini{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.stat-mini-val{font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--accent);line-height:1;margin-bottom:4px}
 .stat-mini-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:'IBM Plex Mono',monospace}
 
-.wg-tunnel-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px}
-.wg-tunnel-name{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--vpn);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.wg-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.wg-detail{background:var(--bg4);border-radius:8px;padding:10px}
-.wg-detail-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:4px}
-.wg-detail-val{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+/* INTERFACES */
+.ifaces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.iface-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .2s}
+.iface-card:hover{border-color:var(--border2)}
+.iface-name{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.iface-type-badge{font-size:9px;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.iface-type-wan{background:rgba(255,107,53,.14);color:var(--wan)}
+.iface-type-internal{background:rgba(61,127,255,.11);color:var(--accent)}
+.iface-type-wireguard{background:rgba(168,85,247,.11);color:var(--vpn)}
+.iface-ip{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);margin-top:7px}
+.iface-key{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.iface-flags{display:flex;gap:4px;flex-wrap:wrap;margin-top:9px}
+.flag-ok{font-size:10px;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(54,211,153,.08);color:var(--low);border:1px solid rgba(54,211,153,.18)}
+.flag-warn{font-size:10px;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(255,184,48,.08);color:var(--medium);border:1px solid rgba(255,184,48,.18)}
+.flag-crit{font-size:10px;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(255,56,96,.08);color:var(--critical);border:1px solid rgba(255,56,96,.18)}
 
-/* SYSTEM */
-.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+/* WG */
+.wg-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.wg-name{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--vpn);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wg-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.wg-detail{background:var(--bg4);border-radius:8px;padding:9px}
+.wg-detail-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:3px}
+.wg-detail-val{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+
+/* COMPLIANCE */
+.compliance-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.compliance-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+.compliance-item.pass{border-left:3px solid var(--low)}
+.compliance-item.fail{border-left:3px solid var(--critical)}
+.compliance-icon{font-size:15px;margin-top:1px;flex-shrink:0}
+.compliance-label{font-size:13px;font-weight:500;margin-bottom:3px}
+.compliance-detail{font-size:11px;color:var(--text3)}
+.compliance-ref{font-size:10px;color:var(--text4);font-family:'IBM Plex Mono',monospace;margin-top:3px}
+.compliance-score-bar{height:6px;background:var(--border);border-radius:3px;margin-bottom:20px;overflow:hidden}
+.compliance-score-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+
+/* EXPOSURE */
+.exposure-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px}
+.exposure-port{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--critical);min-width:70px}
+.exposure-proto{font-size:10px;text-transform:uppercase;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.exposure-src{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--medium)}
+.exposure-desc{font-size:12px;color:var(--text2);flex:1}
+
+/* CERTS */
+.cert-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cert-days{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;min-width:64px;text-align:center}
+.cert-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-family:'IBM Plex Mono',monospace;text-align:center}
+.cert-info{flex:1}
+.cert-name{font-size:13px;font-weight:500;margin-bottom:4px}
+.cert-dates{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+/* DHCP */
+.dhcp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.dhcp-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
+.dhcp-iface{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px}
+.dhcp-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)}
+.dhcp-row:last-child{border-bottom:none}
+.dhcp-key{color:var(--text3)}
+.dhcp-val{font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .info-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
 .info-label{font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:5px}
-.info-value{font-size:13px;font-weight:500;color:var(--text);font-family:'IBM Plex Mono',monospace}
-
-/* PAGINATION */
-.pagination{display:flex;gap:7px;align-items:center;justify-content:flex-end;margin-top:14px;padding:0 22px 16px}
-.page-btn{padding:5px 13px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
-.page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
-.page-btn:disabled{opacity:.3;cursor:default}
-.page-info{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.info-value{font-size:13px;font-weight:500;font-family:'IBM Plex Mono',monospace;word-break:break-all}
 
 /* TOOLTIP */
-#tooltip{position:fixed;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:9px 13px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text);pointer-events:none;z-index:1000;max-width:260px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4);line-height:1.6}
+#tooltip{position:fixed;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:9px 13px;font-size:12px;font-family:'IBM Plex Mono',monospace;pointer-events:none;z-index:9999;max-width:260px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.5);line-height:1.6}
 
 .empty-state{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+.section-title{font-size:11px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin:20px 0 10px}
+.section-title:first-child{margin-top:0}
 
-::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 @media(max-width:768px){
   .score-row{grid-template-columns:1fr}
   .findings-summary{grid-template-columns:repeat(3,1fr)}
   header{padding:10px 14px}
-  .app{padding:0 14px 40px}
+  .app{padding:0 12px 40px}
 }
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">
     <div class="logo-icon">🛡</div>
@@ -221,7 +271,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
     </div>
   </div>
   <div class="header-right">
-    <div class="security-notice">⚡ In-memory only — no data stored</div>
+    <div class="security-notice">⚡ In-memory only · no data stored</div>
     <div class="status-dot"></div>
   </div>
 </header>
@@ -232,7 +282,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div id="upload-screen">
   <div>
     <div class="upload-title">Audit Your <span>OPNSense</span><br>Configuration</div>
-    <div class="upload-subtitle">Upload your OPNSense XML backup for an automated security analysis, firewall rule review, and network flow visualization.</div>
+    <div class="upload-subtitle">Upload your OPNSense XML backup for a comprehensive security audit — rules, VPN, certificates, DHCP, compliance, and network flow visualization.</div>
   </div>
   <div class="upload-zone" id="drop-zone">
     <input type="file" id="file-input" accept=".xml">
@@ -254,11 +304,12 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
   <div class="loading-text">ANALYZING CONFIGURATION</div>
   <div class="loading-steps">
     <div class="loading-step" id="step-1">▶ Parsing XML structure...</div>
-    <div class="loading-step" id="step-2">▶ Scanning firewall rules...</div>
+    <div class="loading-step" id="step-2">▶ Scanning firewall rules &amp; shadowing...</div>
     <div class="loading-step" id="step-3">▶ Auditing WireGuard &amp; VPN...</div>
-    <div class="loading-step" id="step-4">▶ Checking interfaces &amp; NAT...</div>
-    <div class="loading-step" id="step-5">▶ Building traffic flow map...</div>
-    <div class="loading-step" id="step-6">▶ Generating recommendations...</div>
+    <div class="loading-step" id="step-4">▶ Checking certificates &amp; expiry...</div>
+    <div class="loading-step" id="step-5">▶ Analyzing DHCP, services &amp; users...</div>
+    <div class="loading-step" id="step-6">▶ Building compliance checklist...</div>
+    <div class="loading-step" id="step-7">▶ Mapping traffic flow &amp; exposure...</div>
   </div>
 </div>
 
@@ -266,14 +317,17 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div id="dashboard">
   <div class="dash-topbar">
     <div class="dash-meta">
-      File: <strong id="meta-filename">—</strong> &nbsp;·&nbsp;
-      Rules: <strong id="meta-rules">—</strong> &nbsp;·&nbsp;
-      Interfaces: <strong id="meta-ifaces">—</strong> &nbsp;·&nbsp;
-      VLANs: <strong id="meta-vlans">—</strong> &nbsp;·&nbsp;
-      WG Tunnels: <strong id="meta-wg">—</strong> &nbsp;·&nbsp;
-      SHA256: <strong id="meta-hash">—</strong>
+      <span class="meta-pill">📄 <strong id="meta-filename">—</strong></span>
+      <span class="meta-pill">Rules: <strong id="meta-rules">—</strong></span>
+      <span class="meta-pill">Ifaces: <strong id="meta-ifaces">—</strong></span>
+      <span class="meta-pill">VLANs: <strong id="meta-vlans">—</strong></span>
+      <span class="meta-pill">WG: <strong id="meta-wg">—</strong></span>
+      <span class="meta-pill">SHA256: <strong id="meta-hash">—</strong></span>
     </div>
-    <button class="btn-reset" onclick="resetApp()">↩ New Analysis</button>
+    <div>
+      <button class="btn-export" onclick="exportFindings()">⬇ Export JSON</button>
+      <button class="btn-reset" onclick="resetApp()">↩ New Analysis</button>
+    </div>
   </div>
 
   <div class="score-row">
@@ -297,55 +351,88 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('findings',this)">🔍 Findings</div>
-    <div class="tab" onclick="switchTab('flow',this)">🗺 Traffic Flow</div>
-    <div class="tab" onclick="switchTab('rules',this)">📋 Firewall Rules</div>
-    <div class="tab" onclick="switchTab('nat',this)">↔ NAT Rules</div>
-    <div class="tab" onclick="switchTab('interfaces',this)">🌐 Interfaces</div>
-    <div class="tab" onclick="switchTab('vpn',this)">🔐 VPN / WireGuard</div>
-    <div class="tab" onclick="switchTab('aliases',this)">📁 Aliases</div>
-    <div class="tab" onclick="switchTab('system',this)">⚙ System</div>
+  <div class="tabs" id="main-tabs">
+    <div class="tab active" data-tab="findings">🔍 Findings</div>
+    <div class="tab" data-tab="compliance">✅ Compliance</div>
+    <div class="tab" data-tab="exposure">🌐 Exposure Map</div>
+    <div class="tab" data-tab="flow">🗺 Traffic Flow</div>
+    <div class="tab" data-tab="rules">📋 Firewall Rules</div>
+    <div class="tab" data-tab="nat">↔ NAT</div>
+    <div class="tab" data-tab="interfaces">🖧 Interfaces</div>
+    <div class="tab" data-tab="vpn">🔐 VPN</div>
+    <div class="tab" data-tab="certs">🔑 Certificates</div>
+    <div class="tab" data-tab="dhcp">📡 DHCP</div>
+    <div class="tab" data-tab="aliases">📁 Aliases</div>
+    <div class="tab" data-tab="system">⚙ System</div>
   </div>
 
+  <!-- FINDINGS -->
   <div id="tab-findings" class="tab-content active">
     <div class="card">
-      <div class="card-header"><div><div class="card-title">Security Findings</div><div class="card-subtitle">Sorted by severity</div></div></div>
+      <div class="card-header"><div><div class="card-title">Security Findings</div><div class="card-subtitle">Sorted by severity · click severity badges above to filter</div></div></div>
       <div class="card-body">
         <div class="filter-bar" id="findings-filter">
-          <button class="filter-btn active" onclick="filterFindings('all',this)">All</button>
-          <button class="filter-btn" onclick="filterFindings('critical',this)">Critical</button>
-          <button class="filter-btn" onclick="filterFindings('high',this)">High</button>
-          <button class="filter-btn" onclick="filterFindings('medium',this)">Medium</button>
-          <button class="filter-btn" onclick="filterFindings('low',this)">Low</button>
-          <button class="filter-btn" onclick="filterFindings('info',this)">Info</button>
+          <button class="filter-btn active" data-sev="all">All</button>
+          <button class="filter-btn" data-sev="critical">Critical</button>
+          <button class="filter-btn" data-sev="high">High</button>
+          <button class="filter-btn" data-sev="medium">Medium</button>
+          <button class="filter-btn" data-sev="low">Low</button>
+          <button class="filter-btn" data-sev="info">Info</button>
+          <input class="search-input" id="findings-search" placeholder="Search findings…" oninput="renderFindings()">
         </div>
         <div id="findings-list"></div>
       </div>
     </div>
   </div>
 
+  <!-- COMPLIANCE -->
+  <div id="tab-compliance" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Security Compliance Checklist</div><div class="card-subtitle" id="compliance-subtitle">—</div></div>
+      </div>
+      <div class="card-body">
+        <div class="compliance-score-bar"><div class="compliance-score-fill" id="compliance-fill"></div></div>
+        <div class="compliance-grid" id="compliance-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPOSURE MAP -->
+  <div id="tab-exposure" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Internet Exposure Map</div><div class="card-subtitle">Ports &amp; services reachable from the internet based on WAN rules + NAT</div></div></div>
+      <div class="card-body" id="exposure-body"></div>
+    </div>
+  </div>
+
+  <!-- FLOW MAP -->
   <div id="tab-flow" class="tab-content">
     <div id="flow-map-container">
-      <div class="card-header"><div><div class="card-title">Network Traffic Flow Map</div><div class="card-subtitle">Based on interfaces and active rules · Scroll to zoom · Drag to pan</div></div></div>
+      <div class="card-header"><div><div class="card-title">Network Traffic Flow</div><div class="card-subtitle">Scroll to zoom · drag to pan · hover nodes for details</div></div></div>
       <div id="flow-map"></div>
       <div class="flow-legend">
         <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>WAN/Internet</div>
         <div class="legend-item"><div class="legend-dot" style="background:#3d7fff"></div>Internal</div>
         <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>WireGuard</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#36d399;height:3px;border-radius:2px;width:18px"></div>PASS rule</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#ff3860;height:3px;border-radius:2px;width:18px"></div>BLOCK rule</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;height:3px;border-radius:2px;width:18px"></div>NAT forward</div>
+        <div class="legend-item"><div class="legend-line" style="background:#36d399"></div>PASS</div>
+        <div class="legend-item"><div class="legend-line" style="background:#ff3860;border-top:2px dashed #ff3860;height:0"></div>BLOCK</div>
+        <div class="legend-item"><div class="legend-line" style="background:#06b6d4"></div>NAT</div>
+        <div class="legend-item"><div class="legend-line" style="background:#a855f7"></div>VPN Tunnel</div>
       </div>
     </div>
   </div>
 
+  <!-- RULES -->
   <div id="tab-rules" class="tab-content">
     <div class="card">
-      <div class="card-header"><div><div class="card-title">Firewall Rules</div><div class="card-subtitle" id="rules-count-label">—</div></div></div>
+      <div class="card-header">
+        <div><div class="card-title">Firewall Rules</div><div class="card-subtitle" id="rules-count-label">—</div></div>
+        <input class="search-input" id="rules-search" placeholder="Filter rules…" oninput="applyRulesFilter()">
+      </div>
       <div style="overflow-x:auto">
-        <table class="rules-table">
-          <thead><tr><th>Seq</th><th>Action</th><th>Interface</th><th>Dir</th><th>Proto</th><th>Source</th><th>Destination</th><th>Port</th><th>Log</th><th>Description</th></tr></thead>
+        <table class="tbl">
+          <thead><tr><th>Seq</th><th>Action</th><th>Interface</th><th>Dir</th><th>Proto</th><th>Source</th><th>Destination</th><th>Port</th><th>GW</th><th>Log</th><th>Sched</th><th>Description</th></tr></thead>
           <tbody id="rules-tbody"></tbody>
         </table>
       </div>
@@ -353,30 +440,36 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
     </div>
   </div>
 
+  <!-- NAT -->
   <div id="tab-nat" class="tab-content">
     <div class="card">
-      <div class="card-header"><div><div class="card-title">NAT / Port Forward Rules</div><div class="card-subtitle" id="nat-count-label">—</div></div></div>
+      <div class="card-header"><div><div class="card-title">NAT / Port Forwards</div><div class="card-subtitle" id="nat-count-label">—</div></div></div>
       <div style="overflow-x:auto">
-        <table class="rules-table">
-          <thead><tr><th>#</th><th>Interface</th><th>Proto</th><th>Destination Port</th><th>→ Target</th><th>Target Port</th><th>Category</th><th>Description</th></tr></thead>
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Interface</th><th>Proto</th><th>Dst Port</th><th>→ Target</th><th>Target Port</th><th>Category</th><th>Description</th></tr></thead>
           <tbody id="nat-tbody"></tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <!-- INTERFACES -->
   <div id="tab-interfaces" class="tab-content">
     <div class="card">
-      <div class="card-header"><div class="card-title">Network Interfaces</div></div>
-      <div class="card-body"><div class="ifaces-grid" id="ifaces-grid"></div></div>
+      <div class="card-header"><div class="card-title">Network Interfaces &amp; VLANs</div></div>
+      <div class="card-body">
+        <div class="ifaces-grid" id="ifaces-grid"></div>
+        <div id="vlans-section"></div>
+      </div>
     </div>
   </div>
 
+  <!-- VPN -->
   <div id="tab-vpn" class="tab-content">
     <div class="card">
-      <div class="card-header"><div class="card-title">VPN &amp; WireGuard</div></div>
+      <div class="card-header"><div class="card-title">VPN — WireGuard &amp; OpenVPN</div></div>
       <div class="card-body">
-        <div class="vpn-grid" id="vpn-stats-grid"></div>
+        <div class="stat-grid" id="vpn-stats"></div>
         <div id="wg-servers-section"></div>
         <div id="wg-clients-section"></div>
         <div id="ovpn-section"></div>
@@ -384,11 +477,30 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
     </div>
   </div>
 
+  <!-- CERTS -->
+  <div id="tab-certs" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Certificates &amp; PKI</div></div>
+      <div class="card-body" id="certs-body"></div>
+    </div>
+  </div>
+
+  <!-- DHCP -->
+  <div id="tab-dhcp" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">DHCP Configuration</div></div>
+      <div class="card-body">
+        <div class="dhcp-grid" id="dhcp-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALIASES -->
   <div id="tab-aliases" class="tab-content">
     <div class="card">
       <div class="card-header"><div class="card-title">Firewall Aliases</div></div>
       <div style="overflow-x:auto">
-        <table class="rules-table">
+        <table class="tbl">
           <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Content Preview</th></tr></thead>
           <tbody id="aliases-tbody"></tbody>
         </table>
@@ -396,121 +508,153 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
     </div>
   </div>
 
+  <!-- SYSTEM -->
   <div id="tab-system" class="tab-content">
     <div class="card">
-      <div class="card-header"><div class="card-title">System Information</div></div>
-      <div class="card-body"><div class="info-grid" id="system-info-grid"></div></div>
+      <div class="card-header"><div class="card-title">System &amp; Services</div></div>
+      <div class="card-body"><div class="info-grid" id="system-grid"></div></div>
     </div>
   </div>
 
 </div><!-- /dashboard -->
 </div><!-- /app -->
-
 <div id="tooltip"></div>
 
 <script>
-// ═══════════════════════════════════
+// ══════════════════════════════════════
 // STATE
-// ═══════════════════════════════════
+// ══════════════════════════════════════
 let appData = null;
-let currentFilter = 'all';
-let rulesPage = 0;
-const RULES_PER_PAGE = 30;
+let currentSev = 'all';
+let rulesPage  = 0;
+let filteredRules = [];
+const PER_PAGE = 30;
 
-// ═══════════════════════════════════
+// ══════════════════════════════════════
 // UPLOAD
-// ═══════════════════════════════════
-const dropZone = document.getElementById('drop-zone');
+// ══════════════════════════════════════
+const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)uploadFile(f)});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])uploadFile(e.target.files[0])});
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if(f) uploadFile(f); });
-fileInput.addEventListener('change', e => { if(e.target.files[0]) uploadFile(e.target.files[0]); });
-
-async function uploadFile(file) {
-  if(!file.name.endsWith('.xml')) { alert('Please upload an OPNSense XML backup file.'); return; }
-  document.getElementById('upload-screen').style.display = 'none';
-  document.getElementById('loading-screen').style.display = 'flex';
-  for(let i=1; i<=6; i++) document.getElementById(`step-${i}`).className = 'loading-step';
-  const steps = [1,2,3,4,5,6];
-  steps.forEach((s,i) => setTimeout(() => {
-    if(i>0) document.getElementById(`step-${steps[i-1]}`).className = 'loading-step done';
-    document.getElementById(`step-${s}`).className = 'loading-step active';
-  }, i*350));
-  const form = new FormData();
-  form.append('file', file);
-  try {
-    const resp = await fetch('/api/analyze', { method:'POST', body:form });
-    if(!resp.ok) { const err = await resp.json(); throw new Error(err.detail || 'Analysis failed'); }
-    appData = await resp.json();
-    setTimeout(() => {
-      document.getElementById('loading-screen').style.display = 'none';
-      renderDashboard(appData);
-    }, 500);
-  } catch(err) {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('upload-screen').style.display = 'flex';
-    alert('Error: ' + err.message);
+async function uploadFile(file){
+  if(!file.name.endsWith('.xml')){alert('Please upload an OPNSense .xml backup file.');return}
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('loading-screen').style.display='flex';
+  for(let i=1;i<=7;i++) document.getElementById(`step-${i}`).className='loading-step';
+  [1,2,3,4,5,6,7].forEach((s,i)=>setTimeout(()=>{
+    if(i>0) document.getElementById(`step-${[1,2,3,4,5,6,7][i-1]}`).className='loading-step done';
+    document.getElementById(`step-${s}`).className='loading-step active';
+  },i*320));
+  const form=new FormData(); form.append('file',file);
+  try{
+    const resp=await fetch('/api/analyze',{method:'POST',body:form});
+    if(!resp.ok){const e=await resp.json();throw new Error(e.detail||'Analysis failed')}
+    appData=await resp.json();
+    setTimeout(()=>{document.getElementById('loading-screen').style.display='none';renderDashboard(appData)},400);
+  }catch(err){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('upload-screen').style.display='flex';
+    alert('Error: '+err.message);
   }
 }
 
-function resetApp() {
-  appData = null;
-  document.getElementById('dashboard').style.display = 'none';
-  document.getElementById('upload-screen').style.display = 'flex';
-  fileInput.value = '';
-  for(let i=1;i<=6;i++) document.getElementById(`step-${i}`).className = 'loading-step';
+function resetApp(){
+  appData=null;
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('upload-screen').style.display='flex';
+  fileInput.value='';
+  for(let i=1;i<=7;i++) document.getElementById(`step-${i}`).className='loading-step';
 }
 
-// ═══════════════════════════════════
+function exportFindings(){
+  if(!appData) return;
+  const out={
+    meta: appData.meta,
+    system: appData.system,
+    score: appData.analysis.score,
+    summary: appData.analysis.summary,
+    findings: appData.analysis.findings,
+    compliance: appData.compliance,
+    exposed_ports: appData.exposed_ports,
+  };
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`opnsense-audit-${Date.now()}.json`; a.click();
+}
+
+// ══════════════════════════════════════
 // DASHBOARD
-// ═══════════════════════════════════
-function renderDashboard(d) {
-  document.getElementById('dashboard').style.display = 'flex';
-  document.getElementById('meta-filename').textContent = d.meta.filename;
-  document.getElementById('meta-rules').textContent = d.meta.rules_count;
-  document.getElementById('meta-ifaces').textContent = d.meta.interfaces_count;
-  document.getElementById('meta-vlans').textContent = d.meta.vlans_count;
-  document.getElementById('meta-wg').textContent = d.meta.wg_tunnels;
-  document.getElementById('meta-hash').textContent = d.meta.file_hash;
+// ══════════════════════════════════════
+function renderDashboard(d){
+  document.getElementById('dashboard').style.display='flex';
+  document.getElementById('meta-filename').textContent=d.meta.filename;
+  document.getElementById('meta-rules').textContent=`${d.meta.active_rules}/${d.meta.rules_count}`;
+  document.getElementById('meta-ifaces').textContent=d.meta.interfaces_count;
+  document.getElementById('meta-vlans').textContent=d.meta.vlans_count;
+  document.getElementById('meta-wg').textContent=`${d.meta.wg_tunnels}s/${d.meta.wg_peers}p`;
+  document.getElementById('meta-hash').textContent=d.meta.file_hash;
   renderScore(d.analysis.score);
-  const s = d.analysis.summary;
-  ['critical','high','medium','low','info'].forEach(k => document.getElementById(`cnt-${k}`).textContent = s[k]);
-  renderFindings(d.analysis.findings, 'all');
+  const s=d.analysis.summary;
+  ['critical','high','medium','low','info'].forEach(k=>document.getElementById(`cnt-${k}`).textContent=s[k]);
+  // Render all tabs
+  renderFindings();
+  renderCompliance(d.compliance);
+  renderExposure(d.exposed_ports);
   renderFlowMap(d.traffic_flow);
   renderRules(d.rules_preview);
   renderNat(d.nat_preview);
-  renderInterfaces(d.interfaces);
+  renderInterfaces(d.interfaces, d.vlans);
   renderVPN(d.wireguard, d.openvpn_summary);
+  renderCerts(d.certs, d.webgui);
+  renderDHCP(d.dhcp_summary);
   renderAliases(d.aliases);
-  renderSystem(d.system, d.user_summary, d.dns, d.syslog, d.ids);
+  renderSystem(d.system, d.user_summary, d.users, d.ssh, d.webgui, d.dns, d.syslog, d.ids, d.crowdsec, d.services);
+  // Tabs
+  document.querySelectorAll('#main-tabs .tab').forEach(t=>{
+    t.addEventListener('click',()=>switchTab(t.dataset.tab,t));
+  });
+  document.querySelectorAll('#findings-filter .filter-btn').forEach(b=>{
+    b.addEventListener('click',()=>{currentSev=b.dataset.sev;renderFindings();
+      document.querySelectorAll('#findings-filter .filter-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
 }
 
-function renderScore(score) {
-  const c = document.getElementById('score-circle');
-  const circumference = 276.46;
-  let color, label;
-  if(score>=85){color='#36d399';label='Well Configured';}
-  else if(score>=70){color='#3d7fff';label='Good, Improvements Possible';}
-  else if(score>=50){color='#ffb830';label='Issues Found';}
-  else{color='#ff3860';label='Critical Issues Present';}
-  document.getElementById('score-value').textContent = score;
-  document.getElementById('score-value').style.color = color;
-  document.getElementById('score-grade').textContent = label;
-  document.getElementById('score-grade').style.color = color;
-  c.style.stroke = color;
-  setTimeout(() => { c.style.strokeDashoffset = circumference - (score/100)*circumference; }, 100);
+function renderScore(s){
+  const c=document.getElementById('score-circle'), circ=276.46;
+  let col,lbl;
+  if(s>=85){col='#36d399';lbl='Well Configured'}
+  else if(s>=70){col='#3d7fff';lbl='Good — improvements possible'}
+  else if(s>=50){col='#ffb830';lbl='Multiple issues found'}
+  else{col='#ff3860';lbl='Significant issues present'}
+  document.getElementById('score-value').textContent=s;
+  document.getElementById('score-value').style.color=col;
+  document.getElementById('score-grade').textContent=lbl;
+  document.getElementById('score-grade').style.color=col;
+  c.style.stroke=col;
+  setTimeout(()=>{c.style.strokeDashoffset=circ-(s/100)*circ},80);
 }
 
-// ═══════════════════════════════════
+// ══════════════════════════════════════
 // FINDINGS
-// ═══════════════════════════════════
-function renderFindings(findings, filter) {
-  const container = document.getElementById('findings-list');
-  const filtered = filter==='all' ? findings : findings.filter(f=>f.severity===filter);
-  if(!filtered.length){ container.innerHTML=`<div class="empty-state">✅ No ${filter==='all'?'':filter+' '}findings</div>`; return; }
-  container.innerHTML = filtered.map(f => `
+// ══════════════════════════════════════
+function renderFindings(){
+  if(!appData) return;
+  const search=(document.getElementById('findings-search').value||'').toLowerCase();
+  const findings=appData.analysis.findings;
+  const filtered=findings.filter(f=>{
+    if(currentSev!=='all' && f.severity!==currentSev) return false;
+    if(search && !f.title.toLowerCase().includes(search) && !f.detail.toLowerCase().includes(search) && !f.category.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  const el=document.getElementById('findings-list');
+  if(!filtered.length){el.innerHTML='<div class="empty-state">✅ No findings match the current filter.</div>';return}
+  el.innerHTML=filtered.map(f=>`
     <div class="finding-item">
       <div><div class="finding-sev sev-pill-${f.severity}">${f.severity}</div></div>
       <div>
@@ -522,360 +666,392 @@ function renderFindings(findings, filter) {
     </div>`).join('');
 }
 
-function filterFindings(sev, btn) {
-  currentFilter = sev;
-  if(btn) {
-    // Update filter buttons — could be in either location
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    // Activate all buttons with same filter value
-    document.querySelectorAll('.filter-btn').forEach(b => { if(b.getAttribute('onclick').includes(`'${sev}'`)) b.classList.add('active'); });
-  }
-  if(appData) renderFindings(appData.analysis.findings, sev);
-  // Switch to findings tab
-  switchTab('findings', document.querySelector('.tab'));
-}
-
-// ═══════════════════════════════════
-// FIREWALL RULES
-// ═══════════════════════════════════
-function renderRules(rules) {
-  document.getElementById('rules-count-label').textContent = `${rules.length} rules total · sorted by sequence`;
-  rulesPage = 0;
-  renderRulesPage(rules);
-}
-
-function renderRulesPage(rules) {
-  const start = rulesPage * RULES_PER_PAGE;
-  const slice = rules.slice(start, start + RULES_PER_PAGE);
-  const tbody = document.getElementById('rules-tbody');
-  tbody.innerHTML = slice.map(r => {
-    const disabled = r.enabled !== '1';
-    const actionCls = r.action==='pass'?'action-pass':r.action==='block'?'action-block':'action-reject';
-    const srcAny = r.source==='any';
-    const dstAny = r.destination==='any';
-    return `<tr class="${disabled?'rule-disabled':''}">
-      <td class="mono" style="color:var(--text3)">${r.sequence||r.index+1}</td>
-      <td><span class="${actionCls}">${r.action}</span>${disabled?' <span class="tag">off</span>':''}</td>
-      <td><span class="tag">${r.interface||'any'}</span></td>
-      <td style="color:var(--text3)" class="mono">${r.direction||'in'}</td>
-      <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
-      <td class="mono" style="${srcAny?'color:var(--critical)':''}">${r.source||'any'}</td>
-      <td class="mono" style="${dstAny?'color:var(--medium)':''}">${r.destination||'any'}</td>
-      <td class="mono" style="color:var(--text3)">${r.dest_port||'—'}</td>
-      <td>${r.log==='1'?'<span style="color:var(--low);font-size:11px">✓</span>':'<span style="color:var(--border2)">—</span>'}</td>
-      <td style="color:var(--text2);max-width:200px">${r.description||'<span style="color:var(--text3)">(none)</span>'}</td>
-    </tr>`;
-  }).join('');
-
-  const total = Math.ceil(rules.length / RULES_PER_PAGE);
-  document.getElementById('rules-pagination').innerHTML = `
-    <button class="page-btn" onclick="goRulesPage(-1)" ${rulesPage===0?'disabled':''}>← Prev</button>
-    <span class="page-info">${rulesPage+1} / ${total}</span>
-    <button class="page-btn" onclick="goRulesPage(1)" ${rulesPage>=total-1?'disabled':''}>Next →</button>`;
-}
-
-function goRulesPage(delta) {
-  const total = Math.ceil(appData.rules_preview.length / RULES_PER_PAGE);
-  rulesPage = Math.max(0, Math.min(total-1, rulesPage+delta));
-  renderRulesPage(appData.rules_preview);
-}
-
-// ═══════════════════════════════════
-// NAT
-// ═══════════════════════════════════
-function renderNat(nat) {
-  document.getElementById('nat-count-label').textContent = `${nat.length} rules`;
-  const tbody = document.getElementById('nat-tbody');
-  if(!nat.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No NAT rules found</td></tr>'; return; }
-  tbody.innerHTML = nat.map(r => {
-    const disabled = r.disabled==='1';
-    return `<tr class="${disabled?'rule-disabled':''}">
-      <td class="mono" style="color:var(--text3)">${r.index+1}</td>
-      <td><span class="tag">${r.interface||'wan'}</span>${disabled?' <span class="tag">off</span>':''}</td>
-      <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
-      <td class="mono">${r.dest_port||'any'}</td>
-      <td class="mono" style="color:var(--accent)">${r.target||'—'}</td>
-      <td class="mono">${r.local_port||'—'}</td>
-      <td style="color:var(--text3)">${r.category||'—'}</td>
-      <td style="color:var(--text2)">${r.descr||'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════
-// INTERFACES
-// ═══════════════════════════════════
-function renderInterfaces(interfaces) {
-  const grid = document.getElementById('ifaces-grid');
-  const entries = Object.entries(interfaces);
-  if(!entries.length){ grid.innerHTML='<div class="empty-state">No interfaces found</div>'; return; }
-  grid.innerHTML = entries.map(([key, iface]) => {
-    const tc = iface.type==='wan'?'iface-type-wan':iface.type==='wireguard'?'iface-type-wireguard':'iface-type-internal';
-    const bogon = iface.blockbogons==='1';
-    const priv  = iface.blockpriv==='1';
-    return `<div class="iface-card">
-      <div class="iface-name">
-        ${iface.descr||key}
-        <span class="iface-type-badge ${tc}">${iface.type}</span>
+// ══════════════════════════════════════
+// COMPLIANCE
+// ══════════════════════════════════════
+function renderCompliance(comp){
+  if(!comp) return;
+  document.getElementById('compliance-subtitle').textContent=`${comp.passed}/${comp.total} checks passed · ${comp.score_pct}% score`;
+  const fill=document.getElementById('compliance-fill');
+  fill.style.width='0%';
+  fill.style.background=comp.score_pct>=80?'var(--low)':comp.score_pct>=50?'var(--medium)':'var(--critical)';
+  setTimeout(()=>{fill.style.width=comp.score_pct+'%'},100);
+  document.getElementById('compliance-grid').innerHTML=comp.items.map(item=>`
+    <div class="compliance-item ${item.passed?'pass':'fail'}">
+      <div class="compliance-icon">${item.passed?'✅':'❌'}</div>
+      <div>
+        <div class="compliance-label">${item.label}</div>
+        <div class="compliance-detail">${item.detail}</div>
+        <div class="compliance-ref">${item.ref}</div>
       </div>
-      <div class="iface-key">${iface.if||key}</div>
-      <div class="iface-ip">${iface.ipaddr||'—'}${iface.subnet?'/'+iface.subnet:''}</div>
-      <div class="iface-flags">
-        <span class="${iface.enabled?'flag-ok':'flag-warn'}">${iface.enabled?'UP':'DOWN'}</span>
-        ${iface.type==='wan'?`<span class="${bogon?'flag-ok':'flag-warn'}">${bogon?'BOGONS BLOCKED':'BOGONS OPEN'}</span>`:'' }
-        ${iface.type==='wan'?`<span class="${priv?'flag-ok':'flag-warn'}">${priv?'PRIV BLOCKED':'PRIV OPEN'}</span>`:'' }
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// EXPOSURE MAP
+// ══════════════════════════════════════
+function renderExposure(ports){
+  const el=document.getElementById('exposure-body');
+  if(!ports||!ports.length){
+    el.innerHTML='<div class="empty-state">✅ No open ports detected from WAN rules or NAT.</div>';
+    return;
+  }
+  // Annotate known ports
+  const known={'22':'SSH','80':'HTTP','443':'HTTPS','53':'DNS','3389':'RDP','8080':'HTTP-Alt',
+               '21':'FTP','25':'SMTP','3306':'MySQL','5432':'PostgreSQL','6379':'Redis',
+               '27017':'MongoDB','32400':'Plex','51820':'WireGuard','1194':'OpenVPN'};
+  el.innerHTML=`<p style="font-size:12px;color:var(--text3);margin-bottom:16px">
+    ${ports.length} port(s)/service(s) appear reachable from the internet. Review each to ensure exposure is intentional.</p>`+
+  ports.map(p=>{
+    const risk=p.source==='any'?'<span class="flag-crit">ANY SOURCE</span>':'<span class="flag-warn">restricted source</span>';
+    const svc=known[p.port]||known[p.port.split('/')[0]]||'';
+    return `<div class="exposure-card">
+      <div>
+        <div class="exposure-port">${p.port||'any'}</div>
+        <div class="exposure-proto">${p.proto||'any'}</div>
+      </div>
+      <div style="flex:1">
+        <div style="margin-bottom:5px">${risk} ${svc?`<span class="tag">${svc}</span>`:''}</div>
+        <div class="exposure-desc">${p.descr||'(no description)'}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════
-// VPN / WIREGUARD
-// ═══════════════════════════════════
-function renderVPN(wg, ovpn) {
-  const servers = wg.servers||[];
-  const clients = wg.clients||[];
-  document.getElementById('vpn-stats-grid').innerHTML = `
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${servers.length}</div><div class="stat-mini-label">WG Instances (Local)</div></div>
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${clients.length}</div><div class="stat-mini-label">WG Peers / Clients</div></div>
-    <div class="stat-mini"><div class="stat-mini-val">${ovpn.servers}</div><div class="stat-mini-label">OpenVPN Servers</div></div>
-    <div class="stat-mini"><div class="stat-mini-val">${ovpn.clients}</div><div class="stat-mini-label">OpenVPN Clients</div></div>`;
-
-  // WireGuard server instances
-  const srvSection = document.getElementById('wg-servers-section');
-  if(servers.length) {
-    srvSection.innerHTML = `<div style="font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin:20px 0 12px">WireGuard Instances</div>` +
-      servers.map(s => `
-        <div class="wg-tunnel-card">
-          <div class="wg-tunnel-name">⬡ ${s.name} <span class="${s.enabled==='1'?'flag-ok':'flag-warn'}">${s.enabled==='1'?'ACTIVE':'INACTIVE'}</span></div>
-          <div class="wg-detail-grid">
-            <div class="wg-detail"><div class="wg-detail-label">Tunnel Address</div><div class="wg-detail-val">${s.tunneladdress||'—'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">Listen Port</div><div class="wg-detail-val">${s.port||'(auto)'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">DNS</div><div class="wg-detail-val">${s.dns||'—'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">MTU</div><div class="wg-detail-val">${s.mtu||'default'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">Routes Disabled</div><div class="wg-detail-val">${s.disableroutes==='1'?'Yes (client mode)':'No'}</div></div>
-          </div>
-        </div>`).join('');
-  } else {
-    srvSection.innerHTML = '';
+// ══════════════════════════════════════
+// FLOW MAP
+// ══════════════════════════════════════
+function renderFlowMap(flow){
+  const container=document.getElementById('flow-map');
+  container.innerHTML='';
+  const {nodes,edges}=flow;
+  if(!nodes.length){container.innerHTML='<div class="empty-state" style="padding-top:80px">No interface data for flow map.</div>';return}
+  const W=container.clientWidth||960, H=580;
+  const svg=d3.select('#flow-map').append('svg').attr('width',W).attr('height',H);
+  const defs=svg.append('defs');
+  const arrowCols={wan:'#ff6b35',pass:'#36d399',block:'#ff3860',nat:'#06b6d4',vpn:'#a855f7',vpn_out:'#a855f7',default:'#4a5a7a'};
+  Object.entries(arrowCols).forEach(([k,col])=>{
+    defs.append('marker').attr('id',`arr-${k}`).attr('markerWidth',7).attr('markerHeight',7).attr('refX',6).attr('refY',3).attr('orient','auto')
+      .append('path').attr('d','M0,0 L0,6 L7,3 z').attr('fill',col).attr('opacity',.9);
+  });
+  const g=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.25,3.5]).on('zoom',ev=>g.attr('transform',ev.transform)));
+  // Layout columns
+  const byType={internet:[],wan:[],internal:[],wireguard:[],vpn_out:[]};
+  nodes.forEach(n=>(byType[n.type]||byType.internal).push(n));
+  function layoutCol(arr,xFrac,t=.1,b=.9){
+    const x=W*xFrac,span=H*(b-t);
+    arr.forEach((n,i)=>{n._x=x;n._y=arr.length===1?H/2:H*t+(span/(arr.length-1||1))*i});
   }
-
-  // WireGuard peers/clients
-  const cliSection = document.getElementById('wg-clients-section');
-  if(clients.length) {
-    cliSection.innerHTML = `<div style="font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin:20px 0 12px">WireGuard Peers</div>` +
-      clients.map(c => `
-        <div class="wg-tunnel-card">
-          <div class="wg-tunnel-name">⬡ ${c.name} <span class="${c.enabled==='1'?'flag-ok':'flag-warn'}">${c.enabled==='1'?'ENABLED':'DISABLED'}</span></div>
-          <div class="wg-detail-grid">
-            <div class="wg-detail"><div class="wg-detail-label">Tunnel Address</div><div class="wg-detail-val">${c.tunneladdress||'—'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">Server Endpoint</div><div class="wg-detail-val">${c.serveraddress||'(local peer)'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">Server Port</div><div class="wg-detail-val">${c.serverport||'—'}</div></div>
-            <div class="wg-detail"><div class="wg-detail-label">Keepalive</div><div class="wg-detail-val">${c.keepalive||'—'}s</div></div>
-          </div>
-        </div>`).join('');
-  } else {
-    cliSection.innerHTML = '';
-  }
-
-  if(!servers.length && !clients.length && !ovpn.servers && !ovpn.clients) {
-    document.getElementById('ovpn-section').innerHTML = '<div class="empty-state" style="margin-top:12px">No VPN configuration found.</div>';
-  }
+  layoutCol(byType.internet,.06,.47,.53);
+  layoutCol(byType.wan,.22,.25,.75);
+  layoutCol(byType.internal,.52,.05,.95);
+  layoutCol(byType.wireguard,.82,.06,.5);
+  layoutCol(byType.vpn_out,.82,.55,.95);
+  const nodeById={};
+  nodes.forEach(n=>nodeById[n.id]=n);
+  const NW=112,NH=38;
+  // Edges
+  edges.forEach(edge=>{
+    const s=nodeById[edge.from],t=nodeById[edge.to];
+    if(!s||!t||s._x===undefined||t._x===undefined) return;
+    const col=arrowCols[edge.type]||arrowCols.default;
+    const dx=t._x-s._x,dy=t._y-s._y,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=dx/len,ny=dy/len;
+    const oS=Math.abs(nx)*NW/2+Math.abs(ny)*NH/2+4;
+    const oT=Math.abs(nx)*NW/2+Math.abs(ny)*NH/2+10;
+    const x1=s._x+nx*oS,y1=s._y+ny*oS,x2=t._x-nx*oT,y2=t._y-ny*oT;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,cx2=mx-ny*22,cy2=my+nx*22;
+    const arrowKey=arrowCols[edge.type]?edge.type:'default';
+    g.append('path').attr('d',`M${x1},${y1} Q${cx2},${cy2} ${x2},${y2}`)
+      .attr('fill','none').attr('stroke',col).attr('stroke-width',1.5)
+      .attr('opacity',.5).attr('stroke-dasharray',edge.type==='block'?'5,3':'none')
+      .attr('marker-end',`url(#arr-${arrowKey})`);
+    if(edge.label){
+      g.append('text').attr('x',cx2).attr('y',cy2-5).attr('text-anchor','middle')
+        .attr('fill',col).attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',8.5).attr('opacity',.65)
+        .text(edge.label.length>22?edge.label.slice(0,22)+'…':edge.label);
+    }
+  });
+  // Nodes
+  const nc={internet:'#ff6b35',wan:'#ff6b35',internal:'#3d7fff',wireguard:'#a855f7',vpn_out:'#a855f7'};
+  const ng=g.selectAll('.ng').data(nodes.filter(n=>n._x!==undefined)).join('g')
+    .attr('class','ng').attr('transform',n=>`translate(${n._x},${n._y})`).attr('cursor','pointer');
+  ng.append('rect').attr('x',-NW/2).attr('y',-NH/2).attr('width',NW).attr('height',NH).attr('rx',10)
+    .attr('fill',n=>nc[n.type]||'#3d7fff').attr('fill-opacity',.11)
+    .attr('stroke',n=>nc[n.type]||'#3d7fff').attr('stroke-width',1.5)
+    .style('filter','drop-shadow(0 3px 10px rgba(0,0,0,.35))');
+  ng.append('text').attr('text-anchor','middle').attr('y',-4).attr('fill',n=>nc[n.type]||'#c8d4e8')
+    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',10).attr('font-weight',600).attr('letter-spacing','.05em')
+    .text(n=>n.label.length>13?n.label.slice(0,13)+'…':n.label);
+  ng.append('text').attr('text-anchor','middle').attr('y',10).attr('fill','rgba(200,212,232,.4)')
+    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',8.5)
+    .text(n=>(n.ip||'').length>16?(n.ip||'').slice(0,16)+'…':(n.ip||''));
+  const tt=document.getElementById('tooltip');
+  ng.on('mousemove',(ev,n)=>{
+    tt.style.display='block';tt.style.left=(ev.clientX+12)+'px';tt.style.top=(ev.clientY-8)+'px';
+    tt.innerHTML=`<strong>${n.label}</strong><br>Type: ${n.type}${n.ip?'<br>IP: '+n.ip+(n.subnet?'/'+n.subnet:''):''}`;
+  }).on('mouseleave',()=>tt.style.display='none');
 }
 
-// ═══════════════════════════════════
+// ══════════════════════════════════════
+// RULES
+// ══════════════════════════════════════
+function renderRules(rules){
+  filteredRules=rules;
+  document.getElementById('rules-count-label').textContent=`${rules.length} rules (${rules.filter(r=>r.enabled==='1').length} active) · sorted by sequence`;
+  rulesPage=0;
+  applyRulesFilter();
+}
+function applyRulesFilter(){
+  if(!appData) return;
+  const q=(document.getElementById('rules-search').value||'').toLowerCase();
+  filteredRules=appData.rules_preview.filter(r=>{
+    if(!q) return true;
+    return (r.description||'').toLowerCase().includes(q)||(r.interface||'').toLowerCase().includes(q)||
+           (r.source||'').toLowerCase().includes(q)||(r.destination||'').toLowerCase().includes(q)||
+           (r.dest_port||'').toLowerCase().includes(q)||(r.protocol||'').toLowerCase().includes(q);
+  });
+  rulesPage=0;
+  renderRulesPage();
+}
+function renderRulesPage(){
+  const slice=filteredRules.slice(rulesPage*PER_PAGE,(rulesPage+1)*PER_PAGE);
+  document.getElementById('rules-tbody').innerHTML=slice.map(r=>{
+    const dis=r.enabled!=='1';
+    const ac=r.action==='pass'?'action-pass':r.action==='block'?'action-block':'action-reject';
+    const sAny=r.source==='any';const dAny=r.destination==='any';
+    const float=r.floating==='1'?'<span class="tag" style="color:var(--vpn)">float</span>':'';
+    const sched=r.sched?'<span class="tag" style="color:var(--medium)">⏱</span>':'';
+    return `<tr class="${dis?'row-disabled':''}">
+      <td class="mono" style="color:var(--text3)">${r.sequence||r.index+1}</td>
+      <td><span class="${ac}">${r.action}</span>${dis?' <span class="tag">off</span>':''}${float}</td>
+      <td><span class="tag">${r.interface||'any'}</span></td>
+      <td class="mono" style="color:var(--text3);font-size:10px">${r.direction||'in'}</td>
+      <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
+      <td class="mono ${sAny?'any-warn':''}">${r.source||'any'}</td>
+      <td class="mono ${dAny?'dst-warn':''}">${r.destination||'any'}</td>
+      <td class="mono" style="color:var(--text3)">${r.dest_port||'—'}</td>
+      <td class="mono" style="color:var(--text3);font-size:10px">${r.gateway||'—'}</td>
+      <td>${r.log==='1'?'<span style="color:var(--low);font-size:11px">✓</span>':'<span style="color:var(--border2)">—</span>'}</td>
+      <td>${sched}</td>
+      <td style="color:var(--text2);max-width:200px;font-size:12px">${r.description||'<span style="color:var(--text4)">(none)</span>'}</td>
+    </tr>`;
+  }).join('');
+  const total=Math.ceil(filteredRules.length/PER_PAGE);
+  document.getElementById('rules-pagination').innerHTML=`
+    <button class="page-btn" onclick="goRulesPage(-1)" ${rulesPage===0?'disabled':''}>← Prev</button>
+    <span class="page-info">${rulesPage+1}/${total||1} · ${filteredRules.length} rules</span>
+    <button class="page-btn" onclick="goRulesPage(1)" ${rulesPage>=total-1?'disabled':''}>Next →</button>`;
+}
+function goRulesPage(d){
+  const t=Math.ceil(filteredRules.length/PER_PAGE);
+  rulesPage=Math.max(0,Math.min(t-1,rulesPage+d));
+  renderRulesPage();
+}
+
+// ══════════════════════════════════════
+// NAT
+// ══════════════════════════════════════
+function renderNat(nat){
+  document.getElementById('nat-count-label').textContent=`${nat.length} rules`;
+  const tb=document.getElementById('nat-tbody');
+  if(!nat.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">No NAT rules found</td></tr>';return}
+  tb.innerHTML=nat.map(r=>`<tr class="${r.disabled==='1'?'row-disabled':''}">
+    <td class="mono" style="color:var(--text3)">${r.index+1}</td>
+    <td><span class="tag">${r.interface||'wan'}</span>${r.disabled==='1'?' <span class="tag">off</span>':''}</td>
+    <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
+    <td class="mono">${r.dest_port||'any'}</td>
+    <td class="mono" style="color:var(--accent)">${r.target||'—'}</td>
+    <td class="mono">${r.local_port||'—'}</td>
+    <td style="color:var(--text3)">${r.category||'—'}</td>
+    <td style="color:var(--text2)">${r.descr||'—'}</td>
+  </tr>`).join('');
+}
+
+// ══════════════════════════════════════
+// INTERFACES
+// ══════════════════════════════════════
+function renderInterfaces(ifaces,vlans){
+  const grid=document.getElementById('ifaces-grid');
+  const entries=Object.entries(ifaces);
+  if(!entries.length){grid.innerHTML='<div class="empty-state">No interfaces found</div>';return}
+  grid.innerHTML=entries.map(([key,i])=>{
+    const tc=i.type==='wan'?'iface-type-wan':i.type==='wireguard'?'iface-type-wireguard':'iface-type-internal';
+    const bog=i.blockbogons==='1',priv=i.blockpriv==='1';
+    return `<div class="iface-card">
+      <div class="iface-name">${i.descr||key} <span class="iface-type-badge ${tc}">${i.type}</span></div>
+      <div class="iface-key">${i.if||key}</div>
+      <div class="iface-ip">${i.ipaddr||'—'}${i.subnet?'/'+i.subnet:''}</div>
+      <div class="iface-flags">
+        <span class="${i.enabled?'flag-ok':'flag-crit'}">${i.enabled?'UP':'DOWN'}</span>
+        ${i.type==='wan'?`<span class="${bog?'flag-ok':'flag-crit'}">${bog?'BOGONS✓':'BOGONS✗'}</span>`:''}
+        ${i.type==='wan'?`<span class="${priv?'flag-ok':'flag-warn'}">${priv?'PRIV✓':'PRIV✗'}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  // VLANs
+  const vsec=document.getElementById('vlans-section');
+  if(vlans&&vlans.length){
+    vsec.innerHTML=`<div class="section-title" style="margin-top:24px">VLANs (${vlans.length})</div>
+    <table class="tbl"><thead><tr><th>VLAN Tag</th><th>Parent IF</th><th>VLAN IF</th><th>Description</th></tr></thead><tbody>`+
+    vlans.map(v=>`<tr><td class="mono" style="color:var(--accent)">${v.tag}</td><td class="mono">${v.if}</td><td class="mono">${v.vlanif}</td><td>${v.descr||'—'}</td></tr>`).join('')+
+    '</tbody></table>';
+  } else vsec.innerHTML='';
+}
+
+// ══════════════════════════════════════
+// VPN
+// ══════════════════════════════════════
+function renderVPN(wg,ovpn){
+  const srv=wg.servers||[],cli=wg.clients||[];
+  document.getElementById('vpn-stats').innerHTML=`
+    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${srv.length}</div><div class="stat-mini-label">WG Instances</div></div>
+    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${cli.length}</div><div class="stat-mini-label">WG Peers</div></div>
+    <div class="stat-mini"><div class="stat-mini-val">${ovpn.servers}</div><div class="stat-mini-label">OpenVPN Servers</div></div>
+    <div class="stat-mini"><div class="stat-mini-val">${ovpn.clients}</div><div class="stat-mini-label">OpenVPN Clients</div></div>`;
+  const ss=document.getElementById('wg-servers-section');
+  ss.innerHTML=srv.length?`<div class="section-title">WireGuard Instances</div>`+srv.map(s=>`
+    <div class="wg-card">
+      <div class="wg-name">⬡ ${s.name} <span class="${s.enabled==='1'?'flag-ok':'flag-warn'}">${s.enabled==='1'?'ACTIVE':'INACTIVE'}</span></div>
+      <div class="wg-detail-grid">
+        <div class="wg-detail"><div class="wg-detail-label">Tunnel</div><div class="wg-detail-val">${s.tunneladdress||'—'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">Port</div><div class="wg-detail-val">${s.port||'(auto)'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">DNS</div><div class="wg-detail-val">${s.dns||'—'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">MTU</div><div class="wg-detail-val">${s.mtu||'default'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">Route Mode</div><div class="wg-detail-val">${s.disableroutes==='1'?'No routes (client)':'Route push'}</div></div>
+      </div>
+    </div>`).join(''):'';
+  const cs=document.getElementById('wg-clients-section');
+  cs.innerHTML=cli.length?`<div class="section-title">WireGuard Peers</div>`+cli.map(c=>`
+    <div class="wg-card">
+      <div class="wg-name">⬡ ${c.name}
+        <span class="${c.enabled==='1'?'flag-ok':'flag-warn'}">${c.enabled==='1'?'ENABLED':'DISABLED'}</span>
+        ${c.full_tunnel?'<span class="flag-warn">FULL TUNNEL</span>':''}
+        ${c.missing_keepalive&&c.behind_nat?'<span class="flag-warn">NO KEEPALIVE</span>':''}
+      </div>
+      <div class="wg-detail-grid">
+        <div class="wg-detail"><div class="wg-detail-label">Allowed IPs</div><div class="wg-detail-val">${c.tunneladdress||'—'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">Endpoint</div><div class="wg-detail-val">${c.serveraddress||'(local peer)'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">Port</div><div class="wg-detail-val">${c.serverport||'—'}</div></div>
+        <div class="wg-detail"><div class="wg-detail-label">Keepalive</div><div class="wg-detail-val">${c.keepalive?c.keepalive+'s':'—'}</div></div>
+      </div>
+    </div>`).join(''):'';
+  if(!srv.length&&!cli.length&&!ovpn.servers&&!ovpn.clients)
+    document.getElementById('ovpn-section').innerHTML='<div class="empty-state">No VPN configuration found.</div>';
+  else document.getElementById('ovpn-section').innerHTML='';
+}
+
+// ══════════════════════════════════════
+// CERTIFICATES
+// ══════════════════════════════════════
+function renderCerts(certs,webgui){
+  const el=document.getElementById('certs-body');
+  if(!certs||!certs.length){el.innerHTML='<div class="empty-state">No certificates found.</div>';return}
+  const webref=webgui&&webgui.certref;
+  el.innerHTML=certs.map(c=>{
+    const days=c.days_remaining;
+    const col=days===null?'var(--text3)':days<0?'var(--critical)':days<30?'var(--critical)':days<60?'var(--high)':days<90?'var(--medium)':'var(--low)';
+    const label=days===null?'?':days<0?'EXPIRED':days+'d left';
+    const isWebUI=c.refid===webref;
+    return `<div class="cert-card">
+      <div>
+        <div class="cert-days" style="color:${col}">${days===null?'?':days<0?'!':days}</div>
+        <div class="cert-label" style="color:${col}">${label}</div>
+      </div>
+      <div class="cert-info">
+        <div class="cert-name">${c.descr||'(no name)'}${isWebUI?' <span class="tag" style="color:var(--accent)">WebUI</span>':''}${c.self_signed?'<span class="tag">self-signed</span>':''}</div>
+        <div class="cert-dates">Valid: ${c.not_before?c.not_before.split('T')[0]:'?'} → ${c.not_after?c.not_after.split('T')[0]:'?'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// DHCP
+// ══════════════════════════════════════
+function renderDHCP(dhcp){
+  const grid=document.getElementById('dhcp-grid');
+  const entries=Object.entries(dhcp||{});
+  if(!entries.length){grid.innerHTML='<div class="empty-state">No DHCP configuration found.</div>';return}
+  grid.innerHTML=entries.map(([key,d])=>{
+    const hasOverlap=d.pool_overlaps&&d.pool_overlaps.length>0;
+    return `<div class="dhcp-card">
+      <div class="dhcp-iface">${key} ${d.enabled==='1'?'<span class="flag-ok">ON</span>':'<span class="flag-warn">OFF</span>'} ${hasOverlap?'<span class="flag-crit">OVERLAP</span>':''}</div>
+      <div class="dhcp-row"><span class="dhcp-key">Pool</span><span class="dhcp-val">${d.range_from||'—'} – ${d.range_to||'—'}</span></div>
+      <div class="dhcp-row"><span class="dhcp-key">Pool size</span><span class="dhcp-val">${d.pool_size||0} addrs</span></div>
+      <div class="dhcp-row"><span class="dhcp-key">Static leases</span><span class="dhcp-val">${d.static_count||0}</span></div>
+      <div class="dhcp-row"><span class="dhcp-key">Deny unknown</span><span class="dhcp-val">${d.deny_unknown==='1'?'Yes':'No'}</span></div>
+      ${hasOverlap?`<div class="dhcp-row" style="color:var(--critical)"><span class="dhcp-key">⚠ Overlap IPs</span><span class="dhcp-val">${d.pool_overlaps.join(', ')}</span></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
 // ALIASES
-// ═══════════════════════════════════
-function renderAliases(aliases) {
-  const tbody = document.getElementById('aliases-tbody');
-  if(!aliases||!aliases.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--text3)">No aliases</td></tr>'; return; }
-  tbody.innerHTML = aliases.map(a => {
-    const preview = (a.content||'').split('\n').slice(0,3).join(', ') + (a.content&&a.content.split('\n').length>3?' ...':'');
-    return `<tr>
+// ══════════════════════════════════════
+function renderAliases(aliases){
+  const tb=document.getElementById('aliases-tbody');
+  if(!aliases||!aliases.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">No aliases found</td></tr>';return}
+  tb.innerHTML=aliases.map(a=>{
+    const preview=(a.content||'').split('\n').slice(0,3).join(', ')+(a.content&&a.content.split('\n').length>3?'…':'');
+    return `<tr class="${a.enabled!=='1'?'row-disabled':''}">
       <td class="mono" style="color:var(--accent)">${a.name}</td>
       <td><span class="tag">${a.type||'?'}</span></td>
       <td style="color:var(--text2)">${a.description||'—'}</td>
-      <td class="mono" style="font-size:11px;color:var(--text3);max-width:280px">${preview||'—'}</td>
+      <td class="mono" style="font-size:10px;color:var(--text3);max-width:260px">${preview||'—'}</td>
     </tr>`;
   }).join('');
 }
 
-// ═══════════════════════════════════
+// ══════════════════════════════════════
 // SYSTEM
-// ═══════════════════════════════════
-function renderSystem(sys, users, dns, syslog, ids) {
-  const items = [
-    ['Hostname',       sys?.hostname||'—'],
-    ['Domain',         sys?.domain||'—'],
-    ['Timezone',       sys?.timezone||'—'],
-    ['Version',        sys?.version||'—'],
-    ['Total Users',    users?.total_users??'—'],
-    ['Admin Accounts', (users?.admin_users||[]).join(', ')||'—'],
-    ['DNSSEC',         dns?.dnssec==='1'?'✅ Enabled':'⚠ Disabled'],
-    ['DNS Port',       dns?.port||'53'],
-    ['Hide DNS ID',    dns?.hideidentity==='1'?'✅ Yes':'⚠ No'],
-    ['Remote Syslog',  syslog?.remote_destinations>0?`✅ ${syslog.remote_destinations} destination(s)`:'⚠ None configured'],
-    ['IDS/IPS',        ids?.enabled==='1'?`✅ Active (${ids.active_rules} rules)`:'⚠ Disabled'],
+// ══════════════════════════════════════
+function renderSystem(sys,userSum,users,ssh,webgui,dns,syslog,ids,crowdsec,services){
+  const items=[
+    ['Hostname',      sys.hostname||'—'],
+    ['Domain',        sys.domain||'—'],
+    ['Timezone',      sys.timezone||'—'],
+    ['Last Change By',sys.last_change_by||'—'],
+    ['Version',       sys.version||'—'],
+    ['Total Users',   userSum.total_users||0],
+    ['API Keys Total',userSum.total_api_keys||0],
+    ['OTP Enabled',   `${userSum.otp_enabled||0}/${userSum.total_users||0} admins`],
+    ['SSH',           ssh.enabled?`✅ Port ${ssh.port}`:'❌ Disabled'],
+    ['SSH Password Auth', ssh.enabled?(ssh.password_auth?'⚠ Enabled':'✅ Disabled'):'—'],
+    ['SSH Root Login',ssh.enabled?(ssh.permit_root?'⚠ Permitted':'✅ Denied'):'—'],
+    ['WebGUI Protocol',webgui.protocol==='https'?'✅ HTTPS':'❌ HTTP'],
+    ['WebGUI Port',   webgui.port||'443'],
+    ['DNSSEC',        dns.dnssec==='1'?'✅ Enabled':'⚠ Disabled'],
+    ['Remote Syslog', syslog.remote_destinations>0?`✅ ${syslog.remote_destinations} dest.`:'⚠ None'],
+    ['IDS/IPS',       ids.enabled==='1'?`✅ Active (${ids.active_rules} rules)`:'⚠ Disabled'],
+    ['CrowdSec',      crowdsec.present?(crowdsec.bouncer_enabled==='1'?'✅ Active+Bouncer':'⚠ Agent only'):'❌ Not installed'],
+    ['UPnP',          (services.upnp&&services.upnp.enabled)?'⚠ Enabled':'✅ Disabled'],
+    ['mDNS Repeater', (services.mdns&&services.mdns.enabled)?'⚠ Active':'✅ Inactive'],
   ];
-  document.getElementById('system-info-grid').innerHTML = items.map(([l,v]) => `
+  document.getElementById('system-grid').innerHTML=items.map(([l,v])=>`
     <div class="info-item"><div class="info-label">${l}</div><div class="info-value">${v}</div></div>`).join('');
 }
 
-// ═══════════════════════════════════
-// FLOW MAP (D3)
-// ═══════════════════════════════════
-function renderFlowMap(flow) {
-  const container = document.getElementById('flow-map');
-  container.innerHTML = '';
-  const { nodes, edges } = flow;
-  if(!nodes.length){ container.innerHTML='<div class="empty-state" style="padding-top:80px">No interface data for flow map.</div>'; return; }
-
-  const W = container.clientWidth || 900;
-  const H = 560;
-  const CX = W/2, CY = H/2;
-
-  const svg = d3.select('#flow-map').append('svg').attr('width',W).attr('height',H);
-  const defs = svg.append('defs');
-
-  // Arrow markers
-  const arrowColors = {wan:'#ff6b35',pass:'#36d399',block:'#ff3860',nat:'#06b6d4',vpn:'#a855f7',vpn_out:'#a855f7',default:'#4a5a7a'};
-  Object.entries(arrowColors).forEach(([k,col]) => {
-    defs.append('marker').attr('id',`arr-${k}`).attr('markerWidth',7).attr('markerHeight',7).attr('refX',6).attr('refY',3).attr('orient','auto')
-      .append('path').attr('d','M0,0 L0,6 L7,3 z').attr('fill',col).attr('opacity',.85);
-  });
-
-  const g = svg.append('g');
-
-  svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom', ev => g.attr('transform', ev.transform)));
-
-  // ── Layout ──────────────────────────────────────────────────
-  // Assign positions by type using a clear left→right flow
-  // internet | WAN | internal (top→bottom) | WireGuard (right)
-
-  const byType = {internet:[], wan:[], internal:[], wireguard:[], vpn_out:[]};
-  nodes.forEach(n => {
-    const bucket = byType[n.type] || byType.internal;
-    bucket.push(n);
-  });
-
-  const COL = {internet: 0.08, wan: 0.25, internal: 0.55, wireguard: 0.82, vpn_out: 0.82};
-
-  function layoutColumn(arr, xFrac, topFrac=0.15, bottomFrac=0.85) {
-    const x = W * xFrac;
-    const span = H * (bottomFrac - topFrac);
-    arr.forEach((n,i) => {
-      n._x = x;
-      n._y = arr.length===1 ? CY : H*topFrac + (span/(arr.length-1))*i;
-    });
-  }
-
-  layoutColumn(byType.internet, COL.internet, 0.45, 0.55);
-  layoutColumn(byType.wan, COL.wan, 0.3, 0.7);
-  layoutColumn(byType.internal, COL.internal, 0.08, 0.92);
-
-  // Split WireGuard: outbound clients go bottom-right, local instances top-right
-  const wgLocal = byType.wireguard;
-  const wgOut   = byType.vpn_out;
-  layoutColumn(wgLocal, 0.85, 0.1, 0.5);
-  layoutColumn(wgOut,   0.85, 0.6, 0.95);
-
-  const nodeById = {};
-  nodes.forEach(n => { nodeById[n.id] = n; });
-
-  // ── Draw edges ───────────────────────────────────────────────
-  const nodeW=110, nodeH=38;
-
-  function getEdgeColor(type) {
-    return arrowColors[type]||arrowColors.default;
-  }
-
-  edges.forEach(edge => {
-    const s = nodeById[edge.from];
-    const t = nodeById[edge.to];
-    if(!s||!t||s._x===undefined||t._x===undefined) return;
-
-    const col = getEdgeColor(edge.type);
-    const dx=t._x-s._x, dy=t._y-s._y;
-    const len=Math.sqrt(dx*dx+dy*dy)||1;
-    const nx=dx/len, ny=dy/len;
-    const offS = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 4;
-    const offT = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 10;
-    const x1=s._x+nx*offS, y1=s._y+ny*offS;
-    const x2=t._x-nx*offT, y2=t._y-ny*offT;
-    const mx=(x1+x2)/2, my=(y1+y2)/2;
-    // slight curve to avoid overlapping parallel edges
-    const cx2=mx - ny*20, cy2=my + nx*20;
-
-    const arrowKey = arrowColors[edge.type] ? edge.type : 'default';
-
-    g.append('path')
-      .attr('d',`M${x1},${y1} Q${cx2},${cy2} ${x2},${y2}`)
-      .attr('fill','none')
-      .attr('stroke',col)
-      .attr('stroke-width',1.5)
-      .attr('opacity',0.55)
-      .attr('stroke-dasharray', edge.type==='block'?'5,3':'none')
-      .attr('marker-end',`url(#arr-${arrowKey})`);
-
-    if(edge.label) {
-      g.append('text')
-        .attr('x',cx2).attr('y',cy2-5)
-        .attr('text-anchor','middle')
-        .attr('fill',col)
-        .attr('font-family',"'IBM Plex Mono',monospace")
-        .attr('font-size',9)
-        .attr('opacity',0.7)
-        .text(trunc(edge.label,20));
-    }
-  });
-
-  // ── Draw nodes ───────────────────────────────────────────────
-  const nodeColors = {internet:'#ff6b35',wan:'#ff6b35',internal:'#3d7fff',wireguard:'#a855f7',vpn_out:'#a855f7'};
-
-  const ng = g.selectAll('.ng').data(nodes.filter(n=>n._x!==undefined)).join('g')
-    .attr('class','ng').attr('transform',n=>`translate(${n._x},${n._y})`).attr('cursor','pointer');
-
-  ng.append('rect')
-    .attr('x',-nodeW/2).attr('y',-nodeH/2).attr('width',nodeW).attr('height',nodeH).attr('rx',10)
-    .attr('fill', n=>nodeColors[n.type]||'#3d7fff').attr('fill-opacity',.12)
-    .attr('stroke',n=>nodeColors[n.type]||'#3d7fff').attr('stroke-width',1.5)
-    .style('filter','drop-shadow(0 3px 10px rgba(0,0,0,0.4))');
-
-  ng.append('text')
-    .attr('text-anchor','middle').attr('y',-5)
-    .attr('fill',n=>nodeColors[n.type]||'#c8d4e8')
-    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',10).attr('font-weight',600)
-    .attr('letter-spacing','0.06em')
-    .text(n=>trunc(n.label,13));
-
-  ng.append('text')
-    .attr('text-anchor','middle').attr('y',9)
-    .attr('fill','rgba(200,212,232,0.45)')
-    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',8.5)
-    .text(n=>trunc(n.ip||'',16));
-
-  // Tooltip
-  const tt = document.getElementById('tooltip');
-  ng.on('mousemove',(ev,n)=>{
-    tt.style.display='block';
-    tt.style.left=(ev.clientX+12)+'px';
-    tt.style.top=(ev.clientY-10)+'px';
-    tt.innerHTML=`<strong>${n.label}</strong><br>Type: ${n.type}<br>${n.ip?'IP: '+n.ip+(n.subnet?'/'+n.subnet:''):''}`;
-  }).on('mouseleave',()=>{tt.style.display='none';});
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function switchTab(name, clickedEl){
+  document.querySelectorAll('#main-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  if(clickedEl) clickedEl.classList.add('active');
+  const tc=document.getElementById(`tab-${name}`);
+  if(tc) tc.classList.add('active');
+  if(name==='flow'&&appData) setTimeout(()=>renderFlowMap(appData.traffic_flow),30);
 }
 
-function trunc(s,n){ return s&&s.length>n?s.slice(0,n)+'…':(s||''); }
-
-// ═══════════════════════════════════
-// TABS
-// ═══════════════════════════════════
-function switchTab(name, clickedEl) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>{ if(t.getAttribute('onclick').includes(`'${name}'`)) t.classList.add('active'); });
-  const tc = document.getElementById(`tab-${name}`);
-  if(tc) tc.classList.add('active');
-  if(name==='flow' && appData) setTimeout(()=>renderFlowMap(appData.traffic_flow), 30);
+function filterFindings(sev){
+  currentSev=sev;
+  document.querySelectorAll('#findings-filter .filter-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.sev===sev);
+  });
+  renderFindings();
+  switchTab('findings', document.querySelector('[data-tab="findings"]'));
 }
 </script>
 </body>
