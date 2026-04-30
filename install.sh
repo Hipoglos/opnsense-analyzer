@@ -4,7 +4,7 @@
 # Everything lives under /srv/opnsense-analyzer/ — nothing scattered.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/opnsense-analyzer/main/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/Hipoglos/opnsense-analyzer/main/install.sh | sudo bash
 #   PORT=9090 curl -fsSL ... | sudo bash   # custom port
 # ============================================================
 set -euo pipefail
