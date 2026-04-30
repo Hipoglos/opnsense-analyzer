@@ -1,450 +1,542 @@
 """
 OPNSense Configuration Analyzer - Backend API
-All processing happens in-memory. Files are never written to disk.
-Sensitive data is scrubbed before any analysis results are returned.
+Supports modern OPNsense XML format (23.x / 24.x / 25.x).
+All processing in-memory. Files never written to disk. Secrets redacted.
 """
 
 import xml.etree.ElementTree as ET
 import hashlib
-import re
-import json
-import ipaddress
+import os
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 app = FastAPI(title="OPNSense Analyzer", docs_url=None, redoc_url=None)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["POST", "GET"], allow_headers=["*"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["POST", "GET"],
-    allow_headers=["*"],
-)
-
-# ─── SECURITY: Sanitize sensitive values before returning ───────────────────
+# ─── SECURITY: Redact sensitive values ──────────────────────────────────────
 
 SENSITIVE_KEYS = {
-    "password", "passwd", "secret", "key", "token", "hash",
-    "psk", "cert", "ca", "crl", "prv", "pub", "pin",
-    "username", "user", "apikey", "api_key", "passphrase",
-    "ldap_bindpw", "radius_secret", "vpn_password"
+    "password", "passwd", "secret", "privkey", "psk", "prv",
+    "pin", "passphrase", "ldap_bindpw", "radius_secret",
+    "api_key", "apikey", "license_key", "auth_pass"
 }
 
-def scrub(value: str, key: str = "") -> str:
-    """Replace sensitive values with a placeholder."""
-    k = key.lower()
-    if any(s in k for s in SENSITIVE_KEYS):
+def scrub(key: str, value: str) -> str:
+    if any(s in key.lower() for s in SENSITIVE_KEYS):
         return "***REDACTED***"
     return value
 
-def scrub_dict(d: dict) -> dict:
-    """Recursively scrub sensitive keys from a dict."""
-    out = {}
-    for k, v in d.items():
-        if isinstance(v, dict):
-            out[k] = scrub_dict(v)
-        elif isinstance(v, list):
-            out[k] = [scrub_dict(i) if isinstance(i, dict) else i for i in v]
-        elif isinstance(v, str):
-            out[k] = scrub(v, k)
+def node_to_dict(node) -> dict:
+    """Recursively convert an XML node to a dict, scrubbing sensitive keys."""
+    d = {}
+    for child in node:
+        val = node_to_dict(child) if len(child) else (child.text or "")
+        if isinstance(val, str):
+            val = scrub(child.tag, val)
+        if child.tag in d:
+            if not isinstance(d[child.tag], list):
+                d[child.tag] = [d[child.tag]]
+            d[child.tag].append(val)
         else:
-            out[k] = v
-    return out
+            d[child.tag] = val
+    return d
 
-def safe_ip(ip: str) -> str:
-    """Validate IP or return placeholder."""
-    try:
-        ipaddress.ip_network(ip, strict=False)
-        return ip
-    except Exception:
-        return ip  # Return as-is if it's an alias or hostname
-
-# ─── XML PARSING ────────────────────────────────────────────────────────────
+# ─── XML PARSING ─────────────────────────────────────────────────────────────
 
 def parse_opnsense_xml(content: bytes) -> dict:
-    """Parse OPNSense XML backup into structured dict."""
     try:
         root = ET.fromstring(content)
     except ET.ParseError as e:
         raise HTTPException(status_code=400, detail=f"Invalid XML: {e}")
 
+    opn = root.find("OPNsense")  # Modern OPNsense plugin config block
     data = {}
 
-    # --- System Info (scrubbed) ---
-    system = root.find("system")
-    if system is not None:
+    # ── System ──────────────────────────────────────────────────────────────
+    sys_node = root.find("system")
+    data["system"] = {}
+    if sys_node is not None:
         data["system"] = {
-            "hostname": system.findtext("hostname", "unknown"),
-            "domain": system.findtext("domain", "unknown"),
-            "timezone": system.findtext("timezone", "unknown"),
-            "version": system.findtext("version", "unknown"),
-            "language": system.findtext("language", "en_US"),
+            "hostname": sys_node.findtext("hostname", "unknown"),
+            "domain":   sys_node.findtext("domain", "unknown"),
+            "timezone": sys_node.findtext("timezone", "unknown"),
+            "language": sys_node.findtext("language", "en_US"),
+        }
+        # Version lives in revision block
+        rev = root.find("revision")
+        if rev is not None:
+            data["system"]["version"] = rev.findtext("description", "unknown")
+
+        # Users — count only, never dump credentials
+        users = sys_node.findall("user")
+        admin_users = []
+        for u in users:
+            name = u.findtext("name", "")
+            privs = [p.text for p in u.findall("priv") if p.text]
+            if "page-all" in privs or not privs:  # root/no explicit priv = admin
+                admin_users.append(name)
+        data["user_summary"] = {
+            "total_users": len(users),
+            "admin_users": admin_users,
+            "admin_count": len(admin_users),
         }
 
-    # --- Interfaces ---
-    interfaces_node = root.find("interfaces")
+    # ── Interfaces ───────────────────────────────────────────────────────────
     interfaces = {}
-    if interfaces_node is not None:
-        for iface in interfaces_node:
-            iface_data = {tag.tag: tag.text or "" for tag in iface}
-            # Scrub any sensitive fields
-            iface_data = scrub_dict(iface_data)
-            interfaces[iface.tag] = iface_data
+    ifaces_node = root.find("interfaces")
+    if ifaces_node is not None:
+        for iface in ifaces_node:
+            tag = iface.tag
+            # Skip interface groups (type=group) and loopback
+            iface_type = iface.findtext("type", "")
+            if iface_type in ("group", "none") or tag == "lo0":
+                continue
+            descr = iface.findtext("descr", tag)
+            ipaddr = iface.findtext("ipaddr", "")
+            subnet = iface.findtext("subnet", "")
+            hw_if  = iface.findtext("if", "")
+            enabled = iface.findtext("enable", "1")
+
+            # Determine WAN vs internal
+            is_wan = tag == "wan" or "wanip" in ipaddr.lower() or ipaddr == "dhcp"
+            is_wg  = hw_if.startswith("wg")
+
+            interfaces[tag] = {
+                "key":          tag,
+                "descr":        descr,
+                "if":           hw_if,
+                "ipaddr":       ipaddr if ipaddr != "dhcp" else "DHCP",
+                "subnet":       subnet,
+                "enabled":      enabled != "0",
+                "type":         "wan" if is_wan else ("wireguard" if is_wg else "internal"),
+                "blockbogons":  iface.findtext("blockbogons", "0"),
+                "blockpriv":    iface.findtext("blockpriv", "0"),
+                "mtu":          iface.findtext("mtu", ""),
+            }
     data["interfaces"] = interfaces
 
-    # --- Firewall Rules ---
-    filter_node = root.find("filter")
+    # ── VLANs ────────────────────────────────────────────────────────────────
+    vlans = []
+    vlans_node = root.find("vlans")
+    if vlans_node is not None:
+        for vlan in vlans_node.findall("vlan"):
+            vlans.append({
+                "if":    vlan.findtext("if", ""),
+                "tag":   vlan.findtext("tag", ""),
+                "descr": vlan.findtext("descr", ""),
+                "vlanif": vlan.findtext("vlanif", ""),
+            })
+    data["vlans"] = vlans
+
+    # ── Firewall Rules (modern: OPNsense/Firewall/Filter/rules) ──────────────
     rules = []
-    if filter_node is not None:
-        for rule in filter_node.findall("rule"):
-            r = {tag.tag: (tag.text or "").strip() for tag in rule}
-            # Parse nested source/destination
-            src = rule.find("source")
-            dst = rule.find("destination")
-            r["source"] = {}
-            r["destination"] = {}
-            if src is not None:
-                r["source"] = {t.tag: (t.text or "").strip() for t in src}
-            if dst is not None:
-                r["destination"] = {t.tag: (t.text or "").strip() for t in dst}
-            rules.append(r)
+    if opn is not None:
+        fw = opn.find("Firewall")
+        if fw is not None:
+            filt = fw.find("Filter")
+            if filt is not None:
+                rules_node = filt.find("rules")
+                if rules_node is not None:
+                    for rule in rules_node:
+                        rules.append({
+                            "uuid":            rule.get("uuid", ""),
+                            "enabled":         rule.findtext("enabled", "1"),
+                            "action":          rule.findtext("action", "pass"),
+                            "quick":           rule.findtext("quick", "1"),
+                            "interface":       rule.findtext("interface", ""),
+                            "direction":       rule.findtext("direction", "in"),
+                            "ipprotocol":      rule.findtext("ipprotocol", "inet"),
+                            "protocol":        rule.findtext("protocol", "any"),
+                            "source_net":      rule.findtext("source_net", "any"),
+                            "source_not":      rule.findtext("source_not", "0"),
+                            "source_port":     rule.findtext("source_port", ""),
+                            "destination_net": rule.findtext("destination_net", "any"),
+                            "destination_not": rule.findtext("destination_not", "0"),
+                            "destination_port":rule.findtext("destination_port", ""),
+                            "log":             rule.findtext("log", "0"),
+                            "description":     rule.findtext("description", ""),
+                            "sequence":        rule.findtext("sequence", "0"),
+                            "categories":      rule.findtext("categories", ""),
+                            "gateway":         rule.findtext("gateway", ""),
+                        })
+    # Sort by sequence
+    rules.sort(key=lambda r: int(r.get("sequence") or 0))
     data["rules"] = rules
 
-    # --- NAT Rules ---
-    nat_node = root.find("nat")
+    # ── NAT Rules ────────────────────────────────────────────────────────────
     nat_rules = []
+    nat_node = root.find("nat")
     if nat_node is not None:
         for rule in nat_node.findall("rule"):
-            r = {tag.tag: (tag.text or "").strip() for tag in rule}
+            if rule.findtext("nordr") == "1":
+                continue  # skip no-redirect rules
             src = rule.find("source")
             dst = rule.find("destination")
-            r["source"] = {}
-            r["destination"] = {}
-            if src is not None:
-                r["source"] = {t.tag: (t.text or "").strip() for t in src}
-            if dst is not None:
-                r["destination"] = {t.tag: (t.text or "").strip() for t in dst}
-            nat_rules.append(r)
+            nat_rules.append({
+                "disabled":   rule.findtext("disabled", "0"),
+                "interface":  rule.findtext("interface", "wan"),
+                "protocol":   rule.findtext("protocol", "any"),
+                "source_net": src.findtext("network", "any") if src is not None else "any",
+                "source_port":src.findtext("port", "") if src is not None else "",
+                "dest_net":   dst.findtext("network", "any") if dst is not None else "any",
+                "dest_port":  dst.findtext("port", "") if dst is not None else "",
+                "target":     rule.findtext("target", ""),
+                "local_port": rule.findtext("local-port", ""),
+                "descr":      rule.findtext("descr", ""),
+                "category":   rule.findtext("category", ""),
+                "sequence":   rule.findtext("sequence", "0"),
+            })
+    nat_rules.sort(key=lambda r: int(r.get("sequence") or 0))
     data["nat"] = nat_rules
 
-    # --- Aliases ---
-    aliases_node = root.find("aliases")
+    # ── Aliases ───────────────────────────────────────────────────────────────
     aliases = []
-    if aliases_node is not None:
-        for alias in aliases_node.findall("alias"):
-            a = {tag.tag: (tag.text or "").strip() for tag in alias}
-            aliases.append(a)
+    if opn is not None:
+        fw = opn.find("Firewall")
+        if fw is not None:
+            alias_node = fw.find("Alias/aliases")
+            if alias_node is not None:
+                for alias in alias_node:
+                    aliases.append({
+                        "name":        alias.findtext("name", ""),
+                        "type":        alias.findtext("type", ""),
+                        "description": alias.findtext("description", ""),
+                        "content":     alias.findtext("content", ""),
+                        "enabled":     alias.findtext("enabled", "1"),
+                    })
     data["aliases"] = aliases
 
-    # --- VPN (OpenVPN / IPsec) ---
-    vpn = {}
-    openvpn = root.find("openvpn")
-    if openvpn is not None:
-        servers = []
-        for srv in openvpn.findall("openvpn-server"):
-            s = scrub_dict({tag.tag: (tag.text or "").strip() for tag in srv})
-            servers.append(s)
-        clients = []
-        for cli in openvpn.findall("openvpn-client"):
-            c = scrub_dict({tag.tag: (tag.text or "").strip() for tag in cli})
-            clients.append(c)
-        vpn["openvpn"] = {"servers": servers, "clients": clients}
+    # ── WireGuard ─────────────────────────────────────────────────────────────
+    wg_servers = []
+    wg_clients = []
+    if opn is not None:
+        wg = opn.find("wireguard")
+        if wg is not None:
+            srv_node = wg.find("server/servers")
+            if srv_node is not None:
+                for srv in srv_node:
+                    wg_servers.append({
+                        "name":           srv.findtext("name", ""),
+                        "enabled":        srv.findtext("enabled", "0"),
+                        "instance":       srv.findtext("instance", ""),
+                        "port":           srv.findtext("port", ""),
+                        "tunneladdress":  srv.findtext("tunneladdress", ""),
+                        "dns":            srv.findtext("dns", ""),
+                        "mtu":            srv.findtext("mtu", ""),
+                        "disableroutes":  srv.findtext("disableroutes", "0"),
+                        "pubkey":         srv.findtext("pubkey", ""),
+                        # privkey intentionally excluded (never returned)
+                    })
+            cli_node = wg.find("client/clients")
+            if cli_node is not None:
+                for cli in cli_node:
+                    wg_clients.append({
+                        "name":          cli.findtext("name", ""),
+                        "enabled":       cli.findtext("enabled", "0"),
+                        "tunneladdress": cli.findtext("tunneladdress", ""),
+                        "serveraddress": cli.findtext("serveraddress", ""),
+                        "serverport":    cli.findtext("serverport", ""),
+                        "keepalive":     cli.findtext("keepalive", ""),
+                        "pubkey":        cli.findtext("pubkey", ""),
+                        # psk intentionally excluded
+                    })
+    data["wireguard"] = {"servers": wg_servers, "clients": wg_clients}
 
-    ipsec = root.find("ipsec")
-    if ipsec is not None:
-        phases = []
-        for p in ipsec.findall("phase1"):
-            ph = scrub_dict({tag.tag: (tag.text or "").strip() for tag in p})
-            phases.append(ph)
-        vpn["ipsec"] = {"phase1": phases}
-    data["vpn"] = vpn
+    # ── OpenVPN ───────────────────────────────────────────────────────────────
+    ovpn_servers, ovpn_clients = [], []
+    ovpn_node = root.find("openvpn")
+    if ovpn_node is not None:
+        for srv in ovpn_node.findall("openvpn-server"):
+            ovpn_servers.append({
+                "mode":      srv.findtext("mode", ""),
+                "protocol":  srv.findtext("protocol", ""),
+                "port":      srv.findtext("local_port", ""),
+                "cipher":    srv.findtext("crypto", srv.findtext("cipher", "")),
+                "digest":    srv.findtext("digest", ""),
+                "tls":       srv.findtext("tls", ""),
+                "descr":     srv.findtext("description", srv.findtext("descr", "")),
+            })
+        for cli in ovpn_node.findall("openvpn-client"):
+            ovpn_clients.append({
+                "server_addr": cli.findtext("server_addr", ""),
+                "protocol":    cli.findtext("protocol", ""),
+                "port":        cli.findtext("server_port", ""),
+                "cipher":      cli.findtext("crypto", cli.findtext("cipher", "")),
+                "digest":      cli.findtext("digest", ""),
+            })
+    data["openvpn"] = {"servers": ovpn_servers, "clients": ovpn_clients}
 
-    # --- DHCP ---
-    dhcp = {}
-    for node in root:
-        if node.tag.startswith("dhcpd"):
-            iface_name = node.tag.replace("dhcpd", "") or "lan"
-            d = {tag.tag: (tag.text or "").strip() for tag in node}
-            dhcp[iface_name] = d
-    data["dhcp"] = dhcp
+    # ── DNS (unboundplus) ─────────────────────────────────────────────────────
+    data["dns"] = {}
+    if opn is not None:
+        ub = opn.find("unboundplus")
+        if ub is not None:
+            gen = ub.find("general")
+            adv = ub.find("advanced")
+            data["dns"] = {
+                "enabled":         gen.findtext("enabled", "0") if gen is not None else "0",
+                "dnssec":          gen.findtext("dnssec", "0") if gen is not None else "0",
+                "port":            gen.findtext("port", "53") if gen is not None else "53",
+                "active_interface":gen.findtext("active_interface", "") if gen is not None else "",
+                "hideidentity":    adv.findtext("hideidentity", "0") if adv is not None else "0",
+                "hideversion":     adv.findtext("hideversion", "0") if adv is not None else "0",
+                "dnssecstripped":  adv.findtext("dnssecstripped", "0") if adv is not None else "0",
+            }
 
-    # --- DNS / Unbound ---
-    unbound = root.find("unbound")
-    if unbound is not None:
-        data["dns"] = {tag.tag: (tag.text or "").strip() for tag in unbound}
-    else:
-        data["dns"] = {}
+    # ── Syslog ────────────────────────────────────────────────────────────────
+    data["syslog"] = {"enabled": "0", "remote_destinations": 0}
+    if opn is not None:
+        sl = opn.find("Syslog")
+        if sl is not None:
+            gen = sl.find("general")
+            dests = sl.find("destinations")
+            data["syslog"] = {
+                "enabled":             gen.findtext("enabled", "0") if gen is not None else "0",
+                "loglocal":            gen.findtext("loglocal", "0") if gen is not None else "0",
+                "remote_destinations": len(list(dests)) if dests is not None else 0,
+            }
 
-    # --- Syslog ---
-    syslog = root.find("syslog")
-    if syslog is not None:
-        data["syslog"] = {tag.tag: (tag.text or "").strip() for tag in syslog}
-    else:
-        data["syslog"] = {}
+    # ── IDS/IPS ───────────────────────────────────────────────────────────────
+    data["ids"] = {"enabled": "0", "active_rules": 0}
+    if opn is not None:
+        ids = opn.find("IDS")
+        if ids is not None:
+            settings = ids.find("general")
+            if settings is None:
+                settings = ids.find("settings")
+            enabled_rules = [f for f in ids.findall("files/file") if f.findtext("enabled") == "1"]
+            data["ids"] = {
+                "enabled":      settings.findtext("enabled", "0") if settings is not None else "0",
+                "active_rules": len(enabled_rules),
+            }
 
-    # --- Users (only count, never dump credentials) ---
-    system_node = root.find("system")
-    user_count = 0
-    admin_users = []
-    if system_node is not None:
-        for user in system_node.findall("user"):
-            user_count += 1
-            priv = [p.text for p in user.findall("priv") if p.text]
-            uname = user.findtext("name", "")
-            if "page-all" in priv or "admin" in priv:
-                admin_users.append(uname)
-    data["user_summary"] = {
-        "total_users": user_count,
-        "admin_users": admin_users,
-        "admin_count": len(admin_users)
-    }
+    # ── Zenarmor ─────────────────────────────────────────────────────────────
+    data["zenarmor"] = {"present": False}
+    if opn is not None:
+        zen = opn.find("Zenarmor")
+        if zen is not None:
+            data["zenarmor"] = {"present": True}
 
     return data
 
-# ─── ANALYSIS ENGINE ────────────────────────────────────────────────────────
+# ─── ANALYSIS ENGINE ─────────────────────────────────────────────────────────
 
-SEVERITY = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
+SEVERITY_SCORE = {"critical": 10, "high": 5, "medium": 2, "low": 1, "info": 0}
 
 def analyze(data: dict) -> dict:
     findings = []
     score = 100
 
-    rules = data.get("rules", [])
+    rules      = data.get("rules", [])
     interfaces = data.get("interfaces", {})
-    vpn = data.get("vpn", {})
-    dns = data.get("dns", {})
-    syslog = data.get("syslog", {})
-    user_summary = data.get("user_summary", {})
-    nat = data.get("nat", [])
+    wg         = data.get("wireguard", {})
+    openvpn    = data.get("openvpn", {})
+    dns        = data.get("dns", {})
+    syslog     = data.get("syslog", {})
+    nat        = data.get("nat", [])
+    ids        = data.get("ids", {})
+    users      = data.get("user_summary", {})
+    vlans      = data.get("vlans", [])
 
     def add(severity, category, title, detail, recommendation, rule_ref=None):
         nonlocal score
-        score -= SEVERITY[severity]
+        score -= SEVERITY_SCORE[severity]
         findings.append({
-            "severity": severity,
-            "category": category,
-            "title": title,
-            "detail": detail,
-            "recommendation": recommendation,
-            "rule_ref": rule_ref,
+            "severity": severity, "category": category,
+            "title": title, "detail": detail,
+            "recommendation": recommendation, "rule_ref": rule_ref,
         })
 
-    # ── Rule Analysis ──────────────────────────────────────────────────────
+    active_rules = [r for r in rules if r.get("enabled", "1") == "1"]
 
-    has_default_deny = False
-    any_any_rules = []
-    disabled_rules = []
-    no_log_rules = []
-    allow_all_outbound = []
-    icmp_any = []
-    wan_allow_rules = []
-    no_description_rules = []
-    bogon_not_blocked = True
-    antispoof_missing = []
+    # ── Firewall Rules ────────────────────────────────────────────────────────
 
-    for i, rule in enumerate(rules):
-        action = rule.get("type", rule.get("action", "")).lower()
-        iface = rule.get("interface", "")
-        disabled = rule.get("disabled", "")
-        log = rule.get("log", "")
-        descr = rule.get("descr", "").strip()
-        proto = rule.get("protocol", "any").lower()
+    any_any_pass = []
+    wan_any_src_pass = []
+    no_log_pass = []
+    no_desc = []
+    disabled_rules = [r for r in rules if r.get("enabled", "1") != "1"]
+    has_block_all = False
 
-        src = rule.get("source", {})
-        dst = rule.get("destination", {})
-        src_any = "any" in src or src.get("any") is not None or src.get("network") == "any"
-        dst_any = "any" in dst or dst.get("any") is not None or dst.get("network") == "any"
-
-        if disabled in ("1", "true"):
-            disabled_rules.append(i)
+    for r in active_rules:
+        action   = r.get("action", "pass").lower()
+        iface    = r.get("interface", "")
+        src      = r.get("source_net", "any")
+        dst      = r.get("destination_net", "any")
+        log      = r.get("log", "0")
+        descr    = r.get("description", "").strip()
+        src_any  = src in ("any", "") or src.lower() == "any"
+        dst_any  = dst in ("any", "") or dst.lower() == "any"
+        is_wan   = "wan" in iface.lower()
 
         if not descr:
-            no_description_rules.append(i)
+            no_desc.append(r)
 
         if action == "block" and src_any and dst_any:
-            has_default_deny = True
+            has_block_all = True
 
         if action == "pass" and src_any and dst_any:
-            any_any_rules.append(i)
+            any_any_pass.append(r)
 
-        if action == "pass" and not log and not disabled:
-            no_log_rules.append(i)
+        if action == "pass" and is_wan and src_any:
+            wan_any_src_pass.append(r)
 
-        if action == "pass" and "wan" in iface.lower() and src_any:
-            wan_allow_rules.append(i)
+        if action == "pass" and log == "0":
+            no_log_pass.append(r)
 
-        if proto == "icmp" and src_any:
-            icmp_any.append(i)
+    if not has_block_all:
+        add("medium", "Firewall", "No Explicit Default-Deny Block Rule Found",
+            "No block rule with source=any / destination=any was detected. OPNsense has an implicit deny, but an explicit rule makes the policy auditable.",
+            "Add a block rule at the lowest sequence with source=any, destination=any and logging enabled.")
 
-        if action == "pass" and dst_any and "lan" not in iface.lower():
-            allow_all_outbound.append(i)
+    for r in any_any_pass:
+        add("critical", "Firewall", f"Any-to-Any ALLOW on '{r.get('interface','?')}'",
+            f"Rule '{r.get('description','(no description)')}' (seq {r.get('sequence','?')}) allows all traffic from any source to any destination.",
+            "Replace with specific source/destination/port combinations.")
 
-    # Check bogon blocking on WAN
-    for iface_name, iface in interfaces.items():
-        if "wan" in iface_name.lower():
-            if iface.get("blockbogons", "0") != "1":
-                bogon_not_blocked = True
-                add("high", "Interfaces", "Bogon Networks Not Blocked on WAN",
-                    f"Interface '{iface_name}' does not have bogon network blocking enabled.",
-                    "Enable 'Block bogon networks' on all WAN interfaces to prevent spoofed traffic.")
-            else:
-                bogon_not_blocked = False
-            if iface.get("spoofcheck", iface.get("ipspoof", "0")) not in ("1", "enabled"):
-                antispoof_missing.append(iface_name)
+    for r in wan_any_src_pass:
+        add("high", "Firewall", f"WAN ALLOW from Any Source — Port {r.get('destination_port','any')}",
+            f"Rule '{r.get('description','(no description)')}' (seq {r.get('sequence','?')}) permits inbound WAN traffic from any IP.",
+            "Restrict inbound WAN rules to specific source IPs, geo-blocks, or known ranges wherever possible.")
 
-    if not has_default_deny:
-        add("high", "Firewall Rules", "No Default Deny Rule Found",
-            "A default deny-all rule at the bottom of your ruleset was not detected.",
-            "Add a block rule with source=any, destination=any at the lowest priority to ensure implicit deny.")
+    if len(no_log_pass) > 5:
+        add("medium", "Firewall", f"{len(no_log_pass)} ALLOW Rules Without Logging",
+            f"{len(no_log_pass)} active allow rules have logging disabled.",
+            "Enable logging on allow rules — especially WAN and inter-VLAN — to maintain an audit trail.")
 
-    if any_any_rules:
-        for idx in any_any_rules:
-            r = rules[idx]
-            add("critical", "Firewall Rules", "Any-to-Any ALLOW Rule Detected",
-                f"Rule #{idx+1} ('{r.get('descr','no description')}') on interface '{r.get('interface','')}' allows all traffic.",
-                "Replace any-to-any rules with specific source/destination/port combinations.",
-                rule_ref=idx)
+    if len(disabled_rules) > 5:
+        add("low", "Firewall", f"{len(disabled_rules)} Disabled Rules Accumulating",
+            f"{len(disabled_rules)} rules are disabled but still in the ruleset.",
+            "Remove or document disabled rules regularly to keep the ruleset maintainable.")
 
-    if len(disabled_rules) > 3:
-        add("low", "Firewall Rules", f"{len(disabled_rules)} Disabled Rules Accumulating",
-            f"Rules at positions {[i+1 for i in disabled_rules[:5]]}... are disabled but still present.",
-            "Remove disabled rules periodically to keep the ruleset clean and auditable.")
+    if len(no_desc) > 3:
+        add("low", "Firewall", f"{len(no_desc)} Rules Without Descriptions",
+            f"{len(no_desc)} rules have no description.",
+            "Document every rule with a clear description — who requested it, why, and when.")
 
-    if no_log_rules:
-        add("medium", "Firewall Rules", f"{len(no_log_rules)} ALLOW Rules Without Logging",
-            f"{len(no_log_rules)} active allow rules do not have logging enabled.",
-            "Enable logging on all allow rules to maintain an audit trail of permitted connections.")
+    # ── Interfaces ────────────────────────────────────────────────────────────
 
-    if wan_allow_rules:
-        for idx in wan_allow_rules:
-            r = rules[idx]
-            add("high", "Firewall Rules", "WAN Allow Rule with Any Source",
-                f"Rule #{idx+1} ('{r.get('descr','no description')}') allows inbound WAN traffic from any source.",
-                "Restrict WAN allow rules to specific source IPs or use geographical IP blocking.",
-                rule_ref=idx)
+    wan_ifaces = [i for i in interfaces.values() if i["type"] == "wan"]
+    for iface in wan_ifaces:
+        if iface.get("blockbogons") != "1":
+            add("high", "Interfaces", f"Bogon Blocking Disabled on WAN '{iface['descr']}'",
+                f"Interface '{iface['descr']}' ({iface['if']}) does not block bogon/martian networks.",
+                "Enable 'Block bogon networks' on all WAN interfaces.")
+        if iface.get("blockpriv") != "1":
+            add("medium", "Interfaces", f"Private Network Blocking Disabled on WAN '{iface['descr']}'",
+                f"Interface '{iface['descr']}' ({iface['if']}) does not block RFC1918 addresses inbound from WAN.",
+                "Enable 'Block private networks' on all WAN interfaces to prevent spoofed RFC1918 traffic.")
 
-    if no_description_rules:
-        add("low", "Firewall Rules", f"{len(no_description_rules)} Rules Without Descriptions",
-            f"{len(no_description_rules)} rules have no description.",
-            "Document all firewall rules with clear descriptions for auditing and team handover.")
+    if not vlans and len(interfaces) < 4:
+        add("info", "Architecture", "Consider VLAN Segmentation",
+            f"Only {len(interfaces)} interface(s) detected with no VLANs. Flat networks increase blast radius.",
+            "Use VLANs to segment IoT, Guest, Servers, and Management traffic.")
 
-    # ── VPN Analysis ───────────────────────────────────────────────────────
+    # ── WireGuard ─────────────────────────────────────────────────────────────
 
-    openvpn = vpn.get("openvpn", {})
+    wg_servers = wg.get("servers", [])
+    wg_clients = wg.get("clients", [])
+
+    for srv in wg_servers:
+        if not srv.get("port") and srv.get("disableroutes") == "0":
+            add("info", "WireGuard", f"WireGuard Instance '{srv.get('name','?')}' Has No Listen Port Set",
+                "No explicit listen port configured — WireGuard will use a system-assigned port.",
+                "Set an explicit listen port for reproducibility and firewall rule stability.")
+        if not srv.get("dns"):
+            add("low", "WireGuard", f"No DNS Configured on WireGuard Server '{srv.get('name','?')}'",
+                "The WireGuard instance has no DNS server configured for clients.",
+                "Set the DNS field to your internal resolver so VPN clients use your DNS.")
+
+    if wg_servers or wg_clients:
+        # Check if WAN allow rules exist for WireGuard ports
+        wg_ports = {s.get("port") for s in wg_servers if s.get("port")}
+        rule_ports = {r.get("destination_port") for r in active_rules if r.get("action") == "pass" and "wan" in r.get("interface","").lower()}
+        for port in wg_ports:
+            if port not in rule_ports:
+                add("info", "WireGuard", f"No WAN Allow Rule Found for WireGuard Port {port}",
+                    f"WireGuard server listens on port {port} but no matching WAN allow rule was found.",
+                    "Ensure a WAN firewall rule allows UDP traffic to this port, or check if it's handled via another rule.")
+
+    # ── OpenVPN ───────────────────────────────────────────────────────────────
+
     for srv in openvpn.get("servers", []):
-        cipher = srv.get("crypto", srv.get("cipher", "")).upper()
+        cipher = srv.get("cipher", "").upper()
         digest = srv.get("digest", "").upper()
-        tls_auth = srv.get("tls", srv.get("tlsauth", ""))
-        protocol = srv.get("protocol", "")
-        port = srv.get("local_port", "")
-
-        if cipher and cipher in ("DES", "3DES", "RC4", "BF-CBC", "BLOWFISH"):
-            add("critical", "VPN", f"Weak Cipher in OpenVPN Server",
-                f"Server uses cipher '{cipher}' which is deprecated or broken.",
-                "Use AES-256-GCM or CHACHA20-POLY1305 for OpenVPN encryption.")
-
+        tls    = srv.get("tls", "")
+        if cipher and cipher in ("DES", "3DES", "RC4", "BF-CBC", "BLOWFISH", "CAST5"):
+            add("critical", "OpenVPN", f"Weak Cipher: {cipher}",
+                f"OpenVPN server '{srv.get('descr','?')}' uses deprecated cipher {cipher}.",
+                "Migrate to AES-256-GCM or CHACHA20-POLY1305.")
         if digest and digest in ("MD5", "SHA1"):
-            add("high", "VPN", "Weak HMAC Digest in OpenVPN",
-                f"Server uses digest '{digest}' which is cryptographically weak.",
-                "Switch to SHA256 or SHA512 for HMAC authentication.")
+            add("high", "OpenVPN", f"Weak HMAC Digest: {digest}",
+                f"OpenVPN server uses {digest} for packet authentication.",
+                "Switch to SHA256 or SHA512.")
+        if not tls:
+            add("medium", "OpenVPN", "TLS Auth/Crypt Not Configured",
+                "No TLS auth or TLS crypt key is set on an OpenVPN server.",
+                "Enable tls-crypt (preferred) or tls-auth to prevent unauthenticated TLS handshakes.")
 
-        if not tls_auth:
-            add("medium", "VPN", "OpenVPN TLS Auth/Crypt Not Enabled",
-                "TLS authentication key is not configured on an OpenVPN server.",
-                "Enable tls-auth or tls-crypt to prevent unauthorized access to the TLS handshake.")
-
-        if protocol and "udp" not in protocol.lower() and port not in ("443", "1194"):
-            add("info", "VPN", "OpenVPN Using Non-Standard Port/Protocol",
-                f"Server uses {protocol} on port {port}.",
-                "Consider UDP 1194 (standard) or TCP 443 (firewall-friendly) for OpenVPN.")
-
-    ipsec = vpn.get("ipsec", {})
-    for phase in ipsec.get("phase1", []):
-        encryption = phase.get("encryption-algorithm", {})
-        if isinstance(encryption, dict):
-            alg = encryption.get("name", "").upper()
-        else:
-            alg = str(encryption).upper()
-
-        if alg in ("DES", "3DES", "BLOWFISH"):
-            add("critical", "VPN", f"Weak IPsec Phase1 Encryption",
-                f"IPsec Phase1 uses '{alg}'.",
-                "Use AES-256-GCM or AES-128-GCM for IPsec Phase1.")
-
-        auth = phase.get("authentication", phase.get("authmethod", ""))
-        if auth in ("psk", "pre-shared-key"):
-            add("medium", "VPN", "IPsec Using Pre-Shared Key Authentication",
-                "IPsec Phase1 uses PSK authentication which is less secure than certificates.",
-                "Consider migrating to certificate-based authentication (IKEv2 + EAP) for IPsec.")
-
-    # ── DNS / Unbound ──────────────────────────────────────────────────────
+    # ── DNS ───────────────────────────────────────────────────────────────────
 
     if dns:
-        dnssec = dns.get("dnssec", "0")
-        if dnssec not in ("1", "enabled", "true"):
-            add("medium", "DNS", "DNSSEC Not Enabled",
-                "Unbound DNS resolver does not have DNSSEC validation enabled.",
-                "Enable DNSSEC validation in Unbound to protect against DNS spoofing and cache poisoning.")
+        if dns.get("dnssec") != "1":
+            add("medium", "DNS", "DNSSEC Validation Disabled",
+                "Unbound DNS resolver does not validate DNSSEC signatures.",
+                "Enable DNSSEC in Services → Unbound DNS → General.")
+        if dns.get("hideidentity") != "1":
+            add("low", "DNS", "DNS Identity Not Hidden",
+                "Unbound will respond to 'id.server' and 'hostname.bind' queries, revealing resolver identity.",
+                "Enable 'Hide Identity' in Unbound advanced settings.")
+        if dns.get("hideversion") != "1":
+            add("low", "DNS", "DNS Version Not Hidden",
+                "Unbound will reveal its version string to querying clients.",
+                "Enable 'Hide Version' in Unbound advanced settings.")
 
-        dns_rebind = dns.get("rebind_protection", dns.get("rebindprotection", "0"))
-        if dns_rebind not in ("1", "enabled", "true"):
-            add("medium", "DNS", "DNS Rebinding Protection Not Enabled",
-                "Unbound is not configured to block DNS rebinding attacks.",
-                "Enable DNS rebinding protection to prevent malicious internal DNS resolution.")
+    # ── Syslog ────────────────────────────────────────────────────────────────
 
-        query_forwarding = dns.get("forwarding", "0")
-        if query_forwarding in ("1", "enabled"):
-            add("info", "DNS", "DNS Query Forwarding Enabled",
-                "Unbound is forwarding queries to an upstream resolver.",
-                "Ensure upstream DNS is encrypted (DNS-over-TLS). Consider quad9 (9.9.9.9) or Cloudflare (1.1.1.1) with DoT.")
+    if syslog.get("remote_destinations", 0) == 0:
+        add("high", "Logging", "No Remote Syslog Destination Configured",
+            "All logs are stored locally only. Local logs are lost on reset or hardware failure.",
+            "Configure at least one remote syslog destination (SIEM, Graylog, Loki, etc.) under System → Logging → Remote.")
 
-    # ── Logging & Monitoring ───────────────────────────────────────────────
+    # ── IDS/IPS ───────────────────────────────────────────────────────────────
 
-    if not syslog or all(v in ("", "0") for v in syslog.values()):
-        add("high", "Logging", "No Remote Syslog Configured",
-            "No remote syslog server is configured.",
-            "Configure remote syslog to an external SIEM or log aggregator (e.g., Graylog, Loki, Elastic). Local logs are lost on reboot.")
+    if ids.get("enabled") != "1":
+        add("medium", "IDS/IPS", "Intrusion Detection System Not Enabled",
+            "Suricata IDS/IPS is not active. Threats passing through the firewall will not be inspected.",
+            "Enable IDS/IPS under Services → Intrusion Detection and enable relevant rulesets (ET Open at minimum).")
+    elif ids.get("active_rules", 0) == 0:
+        add("medium", "IDS/IPS", "IDS Enabled But No Active Rulesets",
+            "Suricata is enabled but no rule files are active — it will not detect anything.",
+            "Enable at least the Emerging Threats Open ruleset under Services → Intrusion Detection → Download.")
 
-    # ── Users & Authentication ─────────────────────────────────────────────
+    # ── NAT ───────────────────────────────────────────────────────────────────
 
-    admin_count = user_summary.get("admin_count", 0)
-    admin_users = user_summary.get("admin_users", [])
+    active_nat = [r for r in nat if r.get("disabled") != "1"]
+    for r in active_nat:
+        if not r.get("dest_port") and r.get("interface") == "wan":
+            add("medium", "NAT", f"NAT Rule '{r.get('descr','?')}' Forwards All Ports",
+                f"Port forward rule '{r.get('descr','(no description)')}' has no destination port restriction.",
+                "Restrict NAT rules to specific ports only.")
 
-    if admin_count > 3:
-        add("medium", "Authentication", f"High Number of Admin Accounts ({admin_count})",
-            f"There are {admin_count} users with full administrative privileges.",
-            "Follow least-privilege: limit full admin access. Use role-based access for read-only operators.")
+    # ── Users ─────────────────────────────────────────────────────────────────
 
-    if "admin" in [u.lower() for u in admin_users]:
-        add("high", "Authentication", "Default 'admin' Account Has Full Privileges",
-            "The default 'admin' account is still active with page-all access.",
-            "Rename the admin account or create a named admin user and disable the default admin account.")
+    if users.get("admin_count", 0) > 2:
+        add("medium", "Authentication", f"{users['admin_count']} Full Admin Accounts",
+            f"Accounts with full admin access: {', '.join(users.get('admin_users', []))}",
+            "Apply least-privilege. Use scoped operator roles for non-root admins.")
 
-    # ── NAT ───────────────────────────────────────────────────────────────
+    if "root" in users.get("admin_users", []) and users.get("total_users", 0) == 1:
+        add("low", "Authentication", "Only the Root Account Exists",
+            "All administration is done via the root account with no named user accounts.",
+            "Create named administrator accounts with appropriate roles for accountability and auditability.")
 
-    for i, rule in enumerate(nat):
-        dst = rule.get("destination", {})
-        dst_any = dst.get("any") is not None or dst.get("network") == "any"
-        if dst_any:
-            add("medium", "NAT", f"NAT Rule #{i+1} Forwards All Ports",
-                f"NAT rule '{rule.get('descr','no description')}' forwards all destination ports.",
-                "Restrict NAT port forwarding to specific required ports only.")
-
-    # ── Interface Best Practices ───────────────────────────────────────────
-
-    iface_count = len(interfaces)
-    if iface_count < 3:
-        add("info", "Architecture", "Consider Network Segmentation",
-            f"Only {iface_count} interface(s) defined. Flat networks increase blast radius.",
-            "Consider segmenting with DMZ, IoT VLAN, Guest VLAN, and Management VLAN interfaces.")
-
-    # ── Sort by severity ───────────────────────────────────────────────────
-
-    findings.sort(key=lambda f: SEVERITY.get(f["severity"], 0), reverse=True)
+    # Sort and cap score
+    findings.sort(key=lambda f: SEVERITY_SCORE.get(f["severity"], 0), reverse=True)
     score = max(0, min(100, score))
 
     return {
@@ -452,221 +544,210 @@ def analyze(data: dict) -> dict:
         "score": score,
         "summary": {
             "critical": sum(1 for f in findings if f["severity"] == "critical"),
-            "high": sum(1 for f in findings if f["severity"] == "high"),
-            "medium": sum(1 for f in findings if f["severity"] == "medium"),
-            "low": sum(1 for f in findings if f["severity"] == "low"),
-            "info": sum(1 for f in findings if f["severity"] == "info"),
-            "total": len(findings),
+            "high":     sum(1 for f in findings if f["severity"] == "high"),
+            "medium":   sum(1 for f in findings if f["severity"] == "medium"),
+            "low":      sum(1 for f in findings if f["severity"] == "low"),
+            "info":     sum(1 for f in findings if f["severity"] == "info"),
+            "total":    len(findings),
         }
     }
 
-# ─── TRAFFIC FLOW MAP ───────────────────────────────────────────────────────
+# ─── TRAFFIC FLOW MAP ────────────────────────────────────────────────────────
 
 def build_traffic_flow(data: dict) -> dict:
-    """Build nodes and edges for the traffic flow diagram."""
+    interfaces = data.get("interfaces", {})
+    rules      = data.get("rules", [])
+    nat        = data.get("nat", [])
+    wg         = data.get("wireguard", {})
+
     nodes = []
     edges = []
-    node_ids = set()
+    seen_nodes = set()
 
-    interfaces = data.get("interfaces", {})
-    rules = data.get("rules", [])
-    nat = data.get("nat", [])
-    vpn = data.get("vpn", {})
-
-    # Create interface nodes
-    iface_map = {}
-    for name, iface in interfaces.items():
-        label = iface.get("descr", name) or name
-        itype = "wan" if "wan" in name.lower() else ("lan" if "lan" in name.lower() else "internal")
-        node_id = f"iface_{name}"
-        nodes.append({
-            "id": node_id,
-            "label": label.upper(),
-            "type": itype,
-            "ip": iface.get("ipaddr", ""),
-            "subnet": iface.get("subnet", ""),
-            "enabled": iface.get("enable", "1") != "0",
-        })
-        iface_map[name] = node_id
-        node_ids.add(node_id)
+    def add_node(nid, label, ntype, ip="", subnet=""):
+        if nid not in seen_nodes:
+            seen_nodes.add(nid)
+            nodes.append({"id": nid, "label": label, "type": ntype, "ip": ip, "subnet": subnet})
 
     # Internet node
-    if any("wan" in n.lower() for n in interfaces):
-        nodes.append({"id": "internet", "label": "INTERNET", "type": "internet", "ip": "", "subnet": ""})
-        node_ids.add("internet")
-        for name in interfaces:
-            if "wan" in name.lower():
-                edges.append({
-                    "from": "internet",
-                    "to": f"iface_{name}",
-                    "label": "WAN",
-                    "type": "wan",
-                    "bidirectional": True
-                })
+    add_node("internet", "INTERNET", "internet")
 
-    # VPN nodes
-    openvpn = vpn.get("openvpn", {})
-    if openvpn.get("servers") or openvpn.get("clients"):
-        nodes.append({"id": "vpn_ovpn", "label": "OpenVPN", "type": "vpn", "ip": "", "subnet": ""})
-        node_ids.add("vpn_ovpn")
-        for name in interfaces:
-            if "wan" in name.lower():
-                edges.append({"from": "internet", "to": "vpn_ovpn", "label": "VPN Tunnel", "type": "vpn", "bidirectional": True})
+    # Interface nodes
+    iface_id_map = {}  # interface key → node id
+    for key, iface in interfaces.items():
+        if not iface.get("enabled", True):
+            continue
+        nid = f"iface_{key}"
+        iface_id_map[key] = nid
+        ntype = iface["type"]
+        add_node(nid, iface["descr"], ntype, iface.get("ipaddr",""), iface.get("subnet",""))
+
+    # Connect internet → WAN
+    for key, iface in interfaces.items():
+        if iface["type"] == "wan" and iface.get("enabled", True):
+            edges.append({"from": "internet", "to": iface_id_map[key],
+                         "label": "WAN", "type": "wan", "bidirectional": True})
+
+    # WireGuard tunnel nodes
+    for srv in wg.get("servers", []):
+        if srv.get("enabled") == "1" and not srv.get("disableroutes") == "1":
+            nid = f"wg_{srv['name']}"
+            add_node(nid, srv["name"], "wireguard", srv.get("tunneladdress",""))
+            # Connect to internet via WAN
+            for key, iface in interfaces.items():
+                if iface["type"] == "wan":
+                    edges.append({"from": iface_id_map[key], "to": nid,
+                                 "label": f"WG:{srv.get('port','?')}", "type": "vpn", "bidirectional": True})
+                    break
+
+    # Outbound WireGuard clients (tunnels to external)
+    for cli in wg.get("clients", []):
+        if cli.get("enabled") == "1" and cli.get("serveraddress"):
+            nid = f"wgcli_{cli['name']}"
+            add_node(nid, cli["name"], "vpn_out", cli.get("serveraddress",""))
+            edges.append({"from": "internet", "to": nid,
+                         "label": f"WG→{cli.get('serveraddress','?')}", "type": "vpn", "bidirectional": True})
+
+    # Rule-based inter-interface edges (deduplicated)
+    seen_edges = set()
+    active_rules = [r for r in rules if r.get("enabled","1") == "1"]
+    for rule in active_rules:
+        action = rule.get("action","pass").lower()
+        if action not in ("pass",):
+            continue
+        src_key = rule.get("interface","")
+        dst_net  = rule.get("destination_net","any")
+        dst_key  = None
+
+        # Try to match destination network to an interface
+        for key, iface in interfaces.items():
+            ip = iface.get("ipaddr","")
+            if dst_net == key or (ip and dst_net.startswith(ip.rsplit(".",1)[0])):
+                dst_key = key
                 break
 
-    ipsec = vpn.get("ipsec", {})
-    if ipsec.get("phase1"):
-        nodes.append({"id": "vpn_ipsec", "label": "IPsec", "type": "vpn", "ip": "", "subnet": ""})
-        node_ids.add("vpn_ipsec")
-        edges.append({"from": "internet", "to": "vpn_ipsec", "label": "IPsec Tunnel", "type": "vpn", "bidirectional": True})
-
-    # Rule-based edges between interfaces
-    edge_set = set()
-    for rule in rules:
-        if rule.get("disabled") in ("1", "true"):
-            continue
-        action = rule.get("type", rule.get("action", "pass")).lower()
-        iface = rule.get("interface", "")
-        src = rule.get("source", {})
-        dst = rule.get("destination", {})
-
-        src_net = src.get("network", "")
-        dst_net = dst.get("network", "")
-
-        src_node = iface_map.get(src_net) or iface_map.get(iface)
-        dst_node = iface_map.get(dst_net)
+        src_node = iface_id_map.get(src_key)
+        dst_node = iface_id_map.get(dst_key) if dst_key else None
 
         if src_node and dst_node and src_node != dst_node:
-            ek = (src_node, dst_node, action)
-            if ek not in edge_set:
-                edge_set.add(ek)
-                edges.append({
-                    "from": src_node,
-                    "to": dst_node,
-                    "label": rule.get("descr", action.upper()),
-                    "type": action,
-                    "bidirectional": False,
-                    "protocol": rule.get("protocol", "any"),
-                })
+            ek = (src_node, dst_node)
+            if ek not in seen_edges:
+                seen_edges.add(ek)
+                port = rule.get("destination_port","")
+                proto = rule.get("protocol","any")
+                lbl = rule.get("description","") or f"{proto}/{port}" if port else proto
+                edges.append({"from": src_node, "to": dst_node,
+                             "label": lbl[:30], "type": "pass", "bidirectional": False})
 
-    # NAT edges
-    for rule in nat:
-        src_iface = rule.get("interface", "wan")
-        src_node = iface_map.get(src_iface, "internet")
-        dst = rule.get("target", "")
-        dst_node = None
-        for iface_name, iface_id in iface_map.items():
-            iface_ip = interfaces.get(iface_name, {}).get("ipaddr", "")
-            if dst and iface_ip and dst.startswith(iface_ip.rsplit(".", 1)[0]):
-                dst_node = iface_id
+    # NAT port-forward edges (WAN → internal target)
+    for r in nat:
+        if r.get("disabled") == "1":
+            continue
+        target_ip = r.get("target","")
+        src_iface = r.get("interface","wan")
+        src_node  = iface_id_map.get(src_iface, "internet")
+        # Find which interface the target IP belongs to
+        dst_node  = None
+        for key, iface in interfaces.items():
+            ip = iface.get("ipaddr","")
+            if target_ip and ip and target_ip.startswith(ip.rsplit(".",1)[0]):
+                dst_node = iface_id_map.get(key)
                 break
         if dst_node and src_node != dst_node:
-            edges.append({
-                "from": src_node,
-                "to": dst_node,
-                "label": f"NAT → {rule.get('descr','Port Forward')}",
-                "type": "nat",
-                "bidirectional": False,
-            })
+            port = r.get("local_port","")
+            edges.append({"from": src_node, "to": dst_node,
+                         "label": f"NAT:{port}" if port else f"NAT:{r.get('descr','')}",
+                         "type": "nat", "bidirectional": False})
 
     return {"nodes": nodes, "edges": edges}
 
-# ─── API ENDPOINTS ──────────────────────────────────────────────────────────
+# ─── API ENDPOINTS ────────────────────────────────────────────────────────────
 
 @app.post("/api/analyze")
 async def analyze_config(file: UploadFile = File(...)):
-    """
-    Accepts an OPNSense XML backup, parses it in-memory, returns analysis.
-    The file is NEVER written to disk. All sensitive values are redacted.
-    """
     if not file.filename.endswith(".xml"):
         raise HTTPException(status_code=400, detail="Only .xml files are accepted.")
 
     content = await file.read()
-
-    # Limit upload size to 20MB
     if len(content) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large (max 20MB).")
 
-    # Parse XML
-    data = parse_opnsense_xml(content)
-
-    # Analyze
+    data     = parse_opnsense_xml(content)
     analysis = analyze(data)
+    flow     = build_traffic_flow(data)
 
-    # Build traffic flow
-    flow = build_traffic_flow(data)
-
-    # Prepare safe summary (no raw XML, no sensitive fields)
     result = {
         "meta": {
-            "filename": file.filename,
-            "file_hash": hashlib.sha256(content).hexdigest()[:16] + "...",
-            "rules_count": len(data.get("rules", [])),
-            "interfaces_count": len(data.get("interfaces", {})),
+            "filename":        file.filename,
+            "file_hash":       hashlib.sha256(content).hexdigest()[:16] + "...",
+            "rules_count":     len(data.get("rules", [])),
+            "interfaces_count":len(data.get("interfaces", {})),
             "nat_rules_count": len(data.get("nat", [])),
-            "aliases_count": len(data.get("aliases", [])),
+            "aliases_count":   len(data.get("aliases", [])),
+            "vlans_count":     len(data.get("vlans", [])),
+            "wg_tunnels":      len(data.get("wireguard",{}).get("servers",[])),
         },
-        "system": data.get("system", {}),
-        "user_summary": data.get("user_summary", {}),
-        "interfaces": {
-            k: {
-                "descr": v.get("descr", k),
-                "ipaddr": v.get("ipaddr", ""),
-                "subnet": v.get("subnet", ""),
-                "enabled": v.get("enable", "1") != "0",
-                "type": "wan" if "wan" in k.lower() else "internal",
-                "blockbogons": v.get("blockbogons", "0"),
-            }
-            for k, v in data.get("interfaces", {}).items()
-        },
+        "system":      data.get("system", {}),
+        "user_summary":data.get("user_summary", {}),
+        "interfaces":  data.get("interfaces", {}),
+        "vlans":       data.get("vlans", []),
         "rules_preview": [
             {
-                "index": i,
-                "action": r.get("type", r.get("action", "?")),
-                "interface": r.get("interface", ""),
-                "protocol": r.get("protocol", "any"),
-                "source": r.get("source", {}),
-                "destination": r.get("destination", {}),
-                "descr": r.get("descr", "(no description)"),
-                "disabled": r.get("disabled", "0"),
-                "log": r.get("log", "0"),
+                "index":       i,
+                "enabled":     r.get("enabled","1"),
+                "action":      r.get("action","pass"),
+                "interface":   r.get("interface",""),
+                "direction":   r.get("direction","in"),
+                "protocol":    r.get("protocol","any"),
+                "source":      r.get("source_net","any"),
+                "source_port": r.get("source_port",""),
+                "destination": r.get("destination_net","any"),
+                "dest_port":   r.get("destination_port",""),
+                "log":         r.get("log","0"),
+                "description": r.get("description",""),
+                "sequence":    r.get("sequence",""),
+                "gateway":     r.get("gateway",""),
             }
             for i, r in enumerate(data.get("rules", []))
         ],
         "nat_preview": [
             {
-                "index": i,
-                "interface": r.get("interface", ""),
-                "protocol": r.get("protocol", "any"),
-                "source": r.get("source", {}),
-                "destination": r.get("destination", {}),
-                "target": r.get("target", ""),
-                "local_port": r.get("local-port", ""),
-                "descr": r.get("descr", "(no description)"),
+                "index":      i,
+                "disabled":   r.get("disabled","0"),
+                "interface":  r.get("interface",""),
+                "protocol":   r.get("protocol",""),
+                "source":     r.get("source_net","any"),
+                "dest":       r.get("dest_net","any"),
+                "dest_port":  r.get("dest_port",""),
+                "target":     r.get("target",""),
+                "local_port": r.get("local_port",""),
+                "descr":      r.get("descr",""),
+                "category":   r.get("category",""),
             }
             for i, r in enumerate(data.get("nat", []))
         ],
-        "vpn_summary": {
-            "openvpn_servers": len(data.get("vpn", {}).get("openvpn", {}).get("servers", [])),
-            "openvpn_clients": len(data.get("vpn", {}).get("openvpn", {}).get("clients", [])),
-            "ipsec_phases": len(data.get("vpn", {}).get("ipsec", {}).get("phase1", [])),
+        "aliases":     data.get("aliases", []),
+        "wireguard":   data.get("wireguard", {}),
+        "openvpn_summary": {
+            "servers": len(data.get("openvpn",{}).get("servers",[])),
+            "clients": len(data.get("openvpn",{}).get("clients",[])),
         },
-        "analysis": analysis,
-        "traffic_flow": flow,
+        "dns":      data.get("dns", {}),
+        "syslog":   data.get("syslog", {}),
+        "ids":      data.get("ids", {}),
+        "zenarmor": data.get("zenarmor", {}),
+        "analysis":      analysis,
+        "traffic_flow":  flow,
     }
-
     return JSONResponse(content=result)
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "message": "OPNSense Analyzer running"}
+    return {"status": "ok"}
 
 
-# Mount static files (frontend)
-import os as _os
-_static_dir = _os.environ.get("STATIC_DIR", "/app/frontend/static")
+_static_dir = os.environ.get("STATIC_DIR", "/app/frontend/static")
 app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
 
 if __name__ == "__main__":

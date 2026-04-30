@@ -6,1008 +6,208 @@
 <title>OPNSense Analyzer</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
-
-  :root {
-    --bg: #0a0c0f;
-    --bg2: #0f1217;
-    --bg3: #141820;
-    --bg4: #1a2030;
-    --border: #1e2840;
-    --border2: #243050;
-    --text: #c8d4e8;
-    --text2: #7a90b0;
-    --text3: #4a5a7a;
-    --accent: #3d7fff;
-    --accent2: #1a4acc;
-    --critical: #ff3860;
-    --high: #ff6b35;
-    --medium: #ffb830;
-    --low: #36d399;
-    --info: #3d7fff;
-    --wan: #ff6b35;
-    --vpn: #a855f7;
-    --nat: #06b6d4;
-    --pass: #36d399;
-    --block: #ff3860;
-    --internet: #ff6b35;
-    --glow: 0 0 20px rgba(61,127,255,0.15);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 14px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── GRID BG ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(61,127,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(61,127,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ── HEADER ── */
-  header {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 32px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(10,12,15,0.95);
-    backdrop-filter: blur(10px);
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-  }
-
-  .logo-text {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.05em;
-  }
-
-  .logo-sub {
-    font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--low);
-    box-shadow: 0 0 8px var(--low);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .security-notice {
-    font-size: 11px;
-    color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-    letter-spacing: 0.05em;
-  }
-
-  /* ── MAIN LAYOUT ── */
-  .app {
-    position: relative;
-    z-index: 1;
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 0 24px 40px;
-  }
-
-  /* ── UPLOAD SCREEN ── */
-  #upload-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 70px);
-    gap: 40px;
-  }
-
-  .upload-hero {
-    text-align: center;
-  }
-
-  .upload-title {
-    font-size: 42px;
-    font-weight: 300;
-    letter-spacing: -0.02em;
-    color: var(--text);
-    line-height: 1.2;
-  }
-
-  .upload-title span {
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .upload-subtitle {
-    margin-top: 12px;
-    font-size: 15px;
-    color: var(--text2);
-    max-width: 520px;
-    line-height: 1.6;
-  }
-
-  .upload-zone {
-    width: 560px;
-    max-width: 100%;
-    border: 2px dashed var(--border2);
-    border-radius: 16px;
-    padding: 52px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--bg2);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .upload-zone::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 0%, rgba(61,127,255,0.05) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(61,127,255,0.04);
-    box-shadow: var(--glow);
-  }
-
-  .upload-zone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .upload-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    display: block;
-  }
-
-  .upload-label {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .upload-hint {
-    font-size: 12px;
-    color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  .upload-privacy {
-    display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .privacy-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text3);
-  }
-
-  .privacy-item .icon {
-    color: var(--low);
-    font-size: 14px;
-  }
-
-  /* ── LOADING ── */
-  #loading-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 70px);
-    gap: 24px;
-  }
-
-  .spinner {
-    width: 60px;
-    height: 60px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-text {
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--text2);
-    font-size: 14px;
-    letter-spacing: 0.1em;
-  }
-
-  .loading-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .loading-step {
-    font-size: 12px;
-    color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.4s ease;
-  }
-
-  .loading-step.active {
-    opacity: 1;
-    transform: translateX(0);
-    color: var(--accent);
-  }
-
-  .loading-step.done {
-    opacity: 0.6;
-    transform: translateX(0);
-    color: var(--low);
-  }
-
-  /* ── DASHBOARD ── */
-  #dashboard {
-    display: none;
-    flex-direction: column;
-    gap: 24px;
-    padding-top: 28px;
-  }
-
-  /* ── TOP BAR ── */
-  .dash-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .dash-meta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--text3);
-  }
-
-  .dash-meta strong {
-    color: var(--text2);
-  }
-
-  .btn-reset {
-    padding: 8px 20px;
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text2);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'IBM Plex Sans', sans-serif;
-  }
-
-  .btn-reset:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  /* ── SCORE ROW ── */
-  .score-row {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 20px;
-    align-items: stretch;
-  }
-
-  .score-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .score-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 100%, rgba(61,127,255,0.05) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .score-ring {
-    position: relative;
-    width: 100px;
-    height: 100px;
-  }
-
-  .score-ring svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
-
-  .score-ring circle {
-    fill: none;
-    stroke-width: 6;
-  }
-
-  .score-ring .bg-circle { stroke: var(--border); }
-  .score-ring .fg-circle {
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .score-value {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  .score-label {
-    font-size: 12px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  .score-grade {
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .findings-summary {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    align-items: center;
-  }
-
-  .sev-badge {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .sev-badge:hover { filter: brightness(1.2); }
-
-  .sev-badge.critical { background: rgba(255,56,96,0.08); border-color: rgba(255,56,96,0.2); }
-  .sev-badge.high { background: rgba(255,107,53,0.08); border-color: rgba(255,107,53,0.2); }
-  .sev-badge.medium { background: rgba(255,184,48,0.08); border-color: rgba(255,184,48,0.2); }
-  .sev-badge.low { background: rgba(54,211,153,0.08); border-color: rgba(54,211,153,0.2); }
-  .sev-badge.info { background: rgba(61,127,255,0.08); border-color: rgba(61,127,255,0.2); }
-
-  .sev-count {
-    font-size: 36px;
-    font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-    line-height: 1;
-  }
-
-  .sev-badge.critical .sev-count { color: var(--critical); }
-  .sev-badge.high .sev-count { color: var(--high); }
-  .sev-badge.medium .sev-count { color: var(--medium); }
-  .sev-badge.low .sev-count { color: var(--low); }
-  .sev-badge.info .sev-count { color: var(--info); }
-
-  .sev-name {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  /* ── TABS ── */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--border);
-    overflow-x: auto;
-  }
-
-  .tab {
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text3);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .tab:hover { color: var(--text2); }
-
-  .tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* ── SECTION CARD ── */
-  .card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .card-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .card-title {
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: var(--text);
-  }
-
-  .card-subtitle {
-    font-size: 12px;
-    color: var(--text3);
-    margin-top: 2px;
-  }
-
-  .card-body {
-    padding: 24px;
-  }
-
-  /* ── FINDINGS LIST ── */
-  .finding-item {
-    display: grid;
-    grid-template-columns: 100px 1fr;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .finding-item:last-child { border-bottom: none; }
-  .finding-item:hover { background: rgba(255,255,255,0.02); margin: 0 -24px; padding: 16px 24px; }
-
-  .finding-sev {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    align-self: flex-start;
-    margin-top: 2px;
-  }
-
-  .sev-pill-critical { background: rgba(255,56,96,0.15); color: var(--critical); }
-  .sev-pill-high { background: rgba(255,107,53,0.15); color: var(--high); }
-  .sev-pill-medium { background: rgba(255,184,48,0.15); color: var(--medium); }
-  .sev-pill-low { background: rgba(54,211,153,0.15); color: var(--low); }
-  .sev-pill-info { background: rgba(61,127,255,0.15); color: var(--info); }
-
-  .finding-content {}
-
-  .finding-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-
-  .finding-detail {
-    font-size: 13px;
-    color: var(--text2);
-    line-height: 1.5;
-    margin-bottom: 8px;
-  }
-
-  .finding-rec {
-    font-size: 12px;
-    color: var(--low);
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    line-height: 1.5;
-  }
-
-  .finding-category {
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--text3);
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  /* ── FILTER BAR ── */
-  .filter-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .filter-btn {
-    padding: 5px 14px;
-    border-radius: 20px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text3);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'IBM Plex Sans', sans-serif;
-  }
-
-  .filter-btn:hover { border-color: var(--text3); color: var(--text2); }
-  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  /* ── RULES TABLE ── */
-  .rules-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  .rules-table th {
-    text-align: left;
-    padding: 10px 12px;
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    border-bottom: 1px solid var(--border);
-    font-weight: 500;
-  }
-
-  .rules-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2);
-    vertical-align: middle;
-  }
-
-  .rules-table tr:last-child td { border-bottom: none; }
-
-  .rules-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .action-pass {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600;
-    background: rgba(54,211,153,0.12);
-    color: var(--pass);
-    text-transform: uppercase;
-  }
-
-  .action-block {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600;
-    background: rgba(255,56,96,0.12);
-    color: var(--block);
-    text-transform: uppercase;
-  }
-
-  .action-reject {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600;
-    background: rgba(255,107,53,0.12);
-    color: var(--high);
-    text-transform: uppercase;
-  }
-
-  .rule-disabled {
-    opacity: 0.4;
-  }
-
-  .tag {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    background: var(--bg3);
-    color: var(--text3);
-    border: 1px solid var(--border);
-  }
-
-  /* ── TRAFFIC FLOW MAP ── */
-  #flow-map-container {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  #flow-map {
-    width: 100%;
-    height: 520px;
-    position: relative;
-    overflow: hidden;
-    cursor: grab;
-  }
-
-  #flow-map:active { cursor: grabbing; }
-
-  #flow-map svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .node-group { cursor: pointer; }
-
-  .node-rect {
-    rx: 12;
-    ry: 12;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
-    transition: filter 0.2s;
-  }
-
-  .node-group:hover .node-rect {
-    filter: drop-shadow(0 4px 20px rgba(61,127,255,0.3));
-  }
-
-  .node-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-anchor: middle;
-    pointer-events: none;
-  }
-
-  .node-sublabel {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.04em;
-    text-anchor: middle;
-    pointer-events: none;
-    fill: rgba(200,212,232,0.5);
-  }
-
-  .flow-edge {
-    fill: none;
-    stroke-width: 1.5;
-    opacity: 0.6;
-    marker-end: url(#arrowhead);
-  }
-
-  .edge-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    fill: var(--text3);
-    text-anchor: middle;
-  }
-
-  /* ── LEGEND ── */
-  .flow-legend {
-    display: flex;
-    gap: 20px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text3);
-  }
-
-  .legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-  }
-
-  /* ── INTERFACES GRID ── */
-  .ifaces-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
-  }
-
-  .iface-card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    transition: border-color 0.2s;
-  }
-
-  .iface-card:hover { border-color: var(--border2); }
-
-  .iface-name {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .iface-type-badge {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .iface-type-wan { background: rgba(255,107,53,0.15); color: var(--wan); }
-  .iface-type-internal { background: rgba(61,127,255,0.12); color: var(--accent); }
-  .iface-type-lan { background: rgba(54,211,153,0.12); color: var(--low); }
-
-  .iface-ip {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--text2);
-    margin-top: 8px;
-  }
-
-  .iface-detail {
-    font-size: 12px;
-    color: var(--text3);
-    margin-top: 4px;
-  }
-
-  .iface-flags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-
-  .iface-flag {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  .flag-ok { background: rgba(54,211,153,0.1); color: var(--low); border: 1px solid rgba(54,211,153,0.2); }
-  .flag-warn { background: rgba(255,184,48,0.1); color: var(--medium); border: 1px solid rgba(255,184,48,0.2); }
-
-  /* ── VPN SECTION ── */
-  .vpn-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .stat-mini {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-  }
-
-  .stat-mini-val {
-    font-size: 32px;
-    font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--accent);
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .stat-mini-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  /* ── SYSTEM INFO ── */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .info-item {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-
-  .info-label {
-    font-size: 11px;
-    font-family: 'IBM Plex Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    margin-bottom: 6px;
-  }
-
-  .info-value {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  /* ── TOOLTIP ── */
-  #tooltip {
-    position: fixed;
-    background: var(--bg4);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--text);
-    pointer-events: none;
-    z-index: 1000;
-    max-width: 280px;
-    display: none;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .score-row { grid-template-columns: 1fr; }
-    .findings-summary { grid-template-columns: repeat(3, 1fr); }
-    header { padding: 12px 16px; }
-    .app { padding: 0 16px 40px; }
-    .upload-zone { width: 100%; }
-    .upload-title { font-size: 28px; }
-    .vpn-summary-grid { grid-template-columns: 1fr; }
-  }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    text-align: center;
-    padding: 40px;
-    color: var(--text3);
-    font-size: 14px;
-  }
-
-  .pagination {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: flex-end;
-    margin-top: 16px;
-  }
-
-  .page-btn {
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text2);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'IBM Plex Sans', sans-serif;
-  }
-
-  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .page-btn:disabled { opacity: 0.3; cursor: default; }
-  .page-info { font-size: 13px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; }
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#0a0c0f;--bg2:#0f1217;--bg3:#141820;--bg4:#1a2030;
+  --border:#1e2840;--border2:#243050;
+  --text:#c8d4e8;--text2:#7a90b0;--text3:#4a5a7a;
+  --accent:#3d7fff;--accent2:#1a4acc;
+  --critical:#ff3860;--high:#ff6b35;--medium:#ffb830;--low:#36d399;--info:#3d7fff;
+  --wan:#ff6b35;--vpn:#a855f7;--nat:#06b6d4;--pass:#36d399;--block:#ff3860;
+  --glow:0 0 20px rgba(61,127,255,0.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(61,127,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(61,127,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:rgba(10,12,15,0.97);backdrop-filter:blur(10px)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-text{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--text);letter-spacing:.05em}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:14px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 6px var(--low);animation:pulse 2s infinite}
+.security-notice{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* MAIN */
+.app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 24px 48px}
+
+/* UPLOAD */
+#upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 64px);gap:36px}
+.upload-title{font-size:40px;font-weight:300;letter-spacing:-.02em;color:var(--text);line-height:1.2;text-align:center}
+.upload-title span{color:var(--accent);font-weight:600}
+.upload-subtitle{margin-top:10px;font-size:15px;color:var(--text2);max-width:500px;line-height:1.6;text-align:center}
+.upload-zone{width:540px;max-width:100%;border:2px dashed var(--border2);border-radius:16px;padding:48px 36px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg2);position:relative;overflow:hidden}
+.upload-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(61,127,255,.05),transparent 70%);pointer-events:none}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(61,127,255,.04);box-shadow:var(--glow)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{font-size:44px;margin-bottom:14px;display:block}
+.upload-label{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px}
+.upload-hint{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.upload-privacy{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.privacy-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text3)}
+.privacy-item .icon{color:var(--low);font-size:13px}
+
+/* LOADING */
+#loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 64px);gap:20px}
+.spinner{width:52px;height:52px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'IBM Plex Mono',monospace;color:var(--text2);font-size:13px;letter-spacing:.1em}
+.loading-steps{display:flex;flex-direction:column;gap:7px}
+.loading-step{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace;opacity:0;transform:translateX(-8px);transition:all .4s}
+.loading-step.active{opacity:1;transform:none;color:var(--accent)}
+.loading-step.done{opacity:.5;transform:none;color:var(--low)}
+
+/* DASHBOARD */
+#dashboard{display:none;flex-direction:column;gap:22px;padding-top:26px}
+.dash-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.dash-meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3)}
+.dash-meta strong{color:var(--text2)}
+.btn-reset{padding:7px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
+.btn-reset:hover{border-color:var(--accent);color:var(--accent)}
+
+/* SCORE ROW */
+.score-row{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:stretch}
+.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
+.score-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 100%,rgba(61,127,255,.05),transparent 70%);pointer-events:none}
+.score-ring{position:relative;width:90px;height:90px}
+.score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring circle{fill:none;stroke-width:6}
+.score-ring .bg-circle{stroke:var(--border)}
+.score-ring .fg-circle{stroke-linecap:round;transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)}
+.score-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.score-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace}
+.score-grade{font-size:13px;font-weight:500}
+
+.findings-summary{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center}
+.sev-badge{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:all .2s}
+.sev-badge:hover{filter:brightness(1.2)}
+.sev-badge.critical{background:rgba(255,56,96,.08);border-color:rgba(255,56,96,.2)}
+.sev-badge.high{background:rgba(255,107,53,.08);border-color:rgba(255,107,53,.2)}
+.sev-badge.medium{background:rgba(255,184,48,.08);border-color:rgba(255,184,48,.2)}
+.sev-badge.low{background:rgba(54,211,153,.08);border-color:rgba(54,211,153,.2)}
+.sev-badge.info{background:rgba(61,127,255,.08);border-color:rgba(61,127,255,.2)}
+.sev-count{font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1}
+.sev-badge.critical .sev-count{color:var(--critical)}
+.sev-badge.high .sev-count{color:var(--high)}
+.sev-badge.medium .sev-count{color:var(--medium)}
+.sev-badge.low .sev-count{color:var(--low)}
+.sev-badge.info .sev-count{color:var(--info)}
+.sev-name{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+/* TABS */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:9px 18px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.card-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600;letter-spacing:.03em;color:var(--text)}
+.card-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
+.card-body{padding:22px}
+
+/* FINDINGS */
+.finding-item{display:grid;grid-template-columns:96px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.finding-item:last-child{border-bottom:none}
+.finding-sev{display:inline-flex;align-items:center;justify-content:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;align-self:flex-start;margin-top:2px}
+.sev-pill-critical{background:rgba(255,56,96,.15);color:var(--critical)}
+.sev-pill-high{background:rgba(255,107,53,.15);color:var(--high)}
+.sev-pill-medium{background:rgba(255,184,48,.15);color:var(--medium)}
+.sev-pill-low{background:rgba(54,211,153,.15);color:var(--low)}
+.sev-pill-info{background:rgba(61,127,255,.15);color:var(--info)}
+.finding-category{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em}
+.finding-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
+.finding-detail{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px}
+.finding-rec{font-size:12px;color:var(--low);display:flex;align-items:flex-start;gap:5px;line-height:1.5}
+
+.filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+.filter-btn{padding:4px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.filter-btn:hover{border-color:var(--text3);color:var(--text2)}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* TABLES */
+.rules-table{width:100%;border-collapse:collapse;font-size:13px}
+.rules-table th{text-align:left;padding:9px 11px;font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500}
+.rules-table td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.rules-table tr:last-child td{border-bottom:none}
+.rules-table tr:hover td{background:rgba(255,255,255,.02)}
+.rules-table tr.rule-disabled td{opacity:.4}
+.action-pass{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(54,211,153,.12);color:var(--pass);text-transform:uppercase}
+.action-block{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,56,96,.12);color:var(--block);text-transform:uppercase}
+.action-reject{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;background:rgba(255,107,53,.12);color:var(--high);text-transform:uppercase}
+.tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+
+/* FLOW MAP */
+#flow-map-container{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+#flow-map{width:100%;height:560px;cursor:grab;overflow:hidden}
+#flow-map:active{cursor:grabbing}
+.flow-legend{display:flex;gap:18px;padding:14px 22px;border-top:1px solid var(--border);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text3)}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+/* INTERFACES GRID */
+.ifaces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.iface-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .2s}
+.iface-card:hover{border-color:var(--border2)}
+.iface-name{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.iface-type-badge{font-size:9px;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.iface-type-wan{background:rgba(255,107,53,.15);color:var(--wan)}
+.iface-type-internal{background:rgba(61,127,255,.12);color:var(--accent)}
+.iface-type-wireguard{background:rgba(168,85,247,.12);color:var(--vpn)}
+.iface-ip{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text2);margin-top:8px}
+.iface-key{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:3px}
+.iface-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.flag-ok{font-size:10px;padding:2px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(54,211,153,.1);color:var(--low);border:1px solid rgba(54,211,153,.2)}
+.flag-warn{font-size:10px;padding:2px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;background:rgba(255,184,48,.1);color:var(--medium);border:1px solid rgba(255,184,48,.2)}
+
+/* VPN */
+.vpn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:22px}
+.stat-mini{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
+.stat-mini-val{font-size:30px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--accent);line-height:1;margin-bottom:5px}
+.stat-mini-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+.wg-tunnel-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px}
+.wg-tunnel-name{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--vpn);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.wg-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.wg-detail{background:var(--bg4);border-radius:8px;padding:10px}
+.wg-detail-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:4px}
+.wg-detail-val{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+
+/* SYSTEM */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.info-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
+.info-label{font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:5px}
+.info-value{font-size:13px;font-weight:500;color:var(--text);font-family:'IBM Plex Mono',monospace}
+
+/* PAGINATION */
+.pagination{display:flex;gap:7px;align-items:center;justify-content:flex-end;margin-top:14px;padding:0 22px 16px}
+.page-btn{padding:5px 13px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Sans',sans-serif}
+.page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.page-btn:disabled{opacity:.3;cursor:default}
+.page-info{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+/* TOOLTIP */
+#tooltip{position:fixed;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:9px 13px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text);pointer-events:none;z-index:1000;max-width:260px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4);line-height:1.6}
+
+.empty-state{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:768px){
+  .score-row{grid-template-columns:1fr}
+  .findings-summary{grid-template-columns:repeat(3,1fr)}
+  header{padding:10px 14px}
+  .app{padding:0 14px 40px}
+}
 </style>
 </head>
 <body>
@@ -1021,318 +221,235 @@
     </div>
   </div>
   <div class="header-right">
-    <div class="security-notice">⚡ All processing is local — no data leaves your server</div>
+    <div class="security-notice">⚡ In-memory only — no data stored</div>
     <div class="status-dot"></div>
   </div>
 </header>
 
 <div class="app">
 
-  <!-- UPLOAD SCREEN -->
-  <div id="upload-screen">
-    <div class="upload-hero">
-      <div class="upload-title">Audit Your <span>OPNSense</span><br>Configuration</div>
-      <div class="upload-subtitle">Upload your OPNSense XML backup for an automated security analysis, rule review, and network flow visualization.</div>
-    </div>
+<!-- UPLOAD -->
+<div id="upload-screen">
+  <div>
+    <div class="upload-title">Audit Your <span>OPNSense</span><br>Configuration</div>
+    <div class="upload-subtitle">Upload your OPNSense XML backup for an automated security analysis, firewall rule review, and network flow visualization.</div>
+  </div>
+  <div class="upload-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".xml">
+    <span class="upload-icon">📄</span>
+    <div class="upload-label">Drop your config.xml here</div>
+    <div class="upload-hint">or click to browse · .xml only · max 20MB</div>
+  </div>
+  <div class="upload-privacy">
+    <div class="privacy-item"><span class="icon">🔒</span>Never stored on disk</div>
+    <div class="privacy-item"><span class="icon">🧹</span>Secrets redacted</div>
+    <div class="privacy-item"><span class="icon">🏠</span>Fully self-hosted</div>
+    <div class="privacy-item"><span class="icon">🚫</span>No external connections</div>
+  </div>
+</div>
 
-    <div class="upload-zone" id="drop-zone">
-      <input type="file" id="file-input" accept=".xml">
-      <span class="upload-icon">📄</span>
-      <div class="upload-label">Drop your config.xml here</div>
-      <div class="upload-hint">or click to browse · .xml only · max 20MB</div>
-    </div>
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">ANALYZING CONFIGURATION</div>
+  <div class="loading-steps">
+    <div class="loading-step" id="step-1">▶ Parsing XML structure...</div>
+    <div class="loading-step" id="step-2">▶ Scanning firewall rules...</div>
+    <div class="loading-step" id="step-3">▶ Auditing WireGuard &amp; VPN...</div>
+    <div class="loading-step" id="step-4">▶ Checking interfaces &amp; NAT...</div>
+    <div class="loading-step" id="step-5">▶ Building traffic flow map...</div>
+    <div class="loading-step" id="step-6">▶ Generating recommendations...</div>
+  </div>
+</div>
 
-    <div class="upload-privacy">
-      <div class="privacy-item"><span class="icon">🔒</span> Never stored on disk</div>
-      <div class="privacy-item"><span class="icon">🧹</span> Sensitive values redacted</div>
-      <div class="privacy-item"><span class="icon">🏠</span> Fully self-hosted</div>
-      <div class="privacy-item"><span class="icon">🚫</span> No external connections</div>
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-topbar">
+    <div class="dash-meta">
+      File: <strong id="meta-filename">—</strong> &nbsp;·&nbsp;
+      Rules: <strong id="meta-rules">—</strong> &nbsp;·&nbsp;
+      Interfaces: <strong id="meta-ifaces">—</strong> &nbsp;·&nbsp;
+      VLANs: <strong id="meta-vlans">—</strong> &nbsp;·&nbsp;
+      WG Tunnels: <strong id="meta-wg">—</strong> &nbsp;·&nbsp;
+      SHA256: <strong id="meta-hash">—</strong>
+    </div>
+    <button class="btn-reset" onclick="resetApp()">↩ New Analysis</button>
+  </div>
+
+  <div class="score-row">
+    <div class="score-card">
+      <div class="score-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="bg-circle" cx="50" cy="50" r="44"/>
+          <circle class="fg-circle" id="score-circle" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="276.46"/>
+        </svg>
+        <div class="score-value" id="score-value">—</div>
+      </div>
+      <div class="score-label">Security Score</div>
+      <div class="score-grade" id="score-grade">—</div>
+    </div>
+    <div class="findings-summary">
+      <div class="sev-badge critical" onclick="filterFindings('critical',this)"><div class="sev-count" id="cnt-critical">0</div><div class="sev-name">Critical</div></div>
+      <div class="sev-badge high" onclick="filterFindings('high',this)"><div class="sev-count" id="cnt-high">0</div><div class="sev-name">High</div></div>
+      <div class="sev-badge medium" onclick="filterFindings('medium',this)"><div class="sev-count" id="cnt-medium">0</div><div class="sev-name">Medium</div></div>
+      <div class="sev-badge low" onclick="filterFindings('low',this)"><div class="sev-count" id="cnt-low">0</div><div class="sev-name">Low</div></div>
+      <div class="sev-badge info" onclick="filterFindings('info',this)"><div class="sev-count" id="cnt-info">0</div><div class="sev-name">Info</div></div>
     </div>
   </div>
 
-  <!-- LOADING SCREEN -->
-  <div id="loading-screen">
-    <div class="spinner"></div>
-    <div class="loading-text">ANALYZING CONFIGURATION</div>
-    <div class="loading-steps">
-      <div class="loading-step" id="step-1">▶ Parsing XML structure...</div>
-      <div class="loading-step" id="step-2">▶ Scanning firewall rules...</div>
-      <div class="loading-step" id="step-3">▶ Analyzing VPN configuration...</div>
-      <div class="loading-step" id="step-4">▶ Checking interfaces & NAT...</div>
-      <div class="loading-step" id="step-5">▶ Building traffic flow map...</div>
-      <div class="loading-step" id="step-6">▶ Generating recommendations...</div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('findings',this)">🔍 Findings</div>
+    <div class="tab" onclick="switchTab('flow',this)">🗺 Traffic Flow</div>
+    <div class="tab" onclick="switchTab('rules',this)">📋 Firewall Rules</div>
+    <div class="tab" onclick="switchTab('nat',this)">↔ NAT Rules</div>
+    <div class="tab" onclick="switchTab('interfaces',this)">🌐 Interfaces</div>
+    <div class="tab" onclick="switchTab('vpn',this)">🔐 VPN / WireGuard</div>
+    <div class="tab" onclick="switchTab('aliases',this)">📁 Aliases</div>
+    <div class="tab" onclick="switchTab('system',this)">⚙ System</div>
+  </div>
+
+  <div id="tab-findings" class="tab-content active">
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Security Findings</div><div class="card-subtitle">Sorted by severity</div></div></div>
+      <div class="card-body">
+        <div class="filter-bar" id="findings-filter">
+          <button class="filter-btn active" onclick="filterFindings('all',this)">All</button>
+          <button class="filter-btn" onclick="filterFindings('critical',this)">Critical</button>
+          <button class="filter-btn" onclick="filterFindings('high',this)">High</button>
+          <button class="filter-btn" onclick="filterFindings('medium',this)">Medium</button>
+          <button class="filter-btn" onclick="filterFindings('low',this)">Low</button>
+          <button class="filter-btn" onclick="filterFindings('info',this)">Info</button>
+        </div>
+        <div id="findings-list"></div>
+      </div>
     </div>
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard">
-    <div class="dash-topbar">
-      <div class="dash-meta">
-        File: <strong id="meta-filename">—</strong> &nbsp;·&nbsp;
-        Rules: <strong id="meta-rules">—</strong> &nbsp;·&nbsp;
-        Interfaces: <strong id="meta-ifaces">—</strong> &nbsp;·&nbsp;
-        SHA256: <strong id="meta-hash">—</strong>
-      </div>
-      <button class="btn-reset" onclick="resetApp()">↩ New Analysis</button>
-    </div>
-
-    <!-- SCORE ROW -->
-    <div class="score-row">
-      <div class="score-card">
-        <div class="score-ring">
-          <svg viewBox="0 0 100 100">
-            <circle class="bg-circle" cx="50" cy="50" r="44"/>
-            <circle class="fg-circle" id="score-circle" cx="50" cy="50" r="44"
-              stroke-dasharray="276.46"
-              stroke-dashoffset="276.46"/>
-          </svg>
-          <div class="score-value" id="score-value">—</div>
-        </div>
-        <div class="score-label">Security Score</div>
-        <div class="score-grade" id="score-grade">—</div>
-      </div>
-
-      <div class="findings-summary">
-        <div class="sev-badge critical" onclick="filterFindings('critical')">
-          <div class="sev-count" id="cnt-critical">0</div>
-          <div class="sev-name">Critical</div>
-        </div>
-        <div class="sev-badge high" onclick="filterFindings('high')">
-          <div class="sev-count" id="cnt-high">0</div>
-          <div class="sev-name">High</div>
-        </div>
-        <div class="sev-badge medium" onclick="filterFindings('medium')">
-          <div class="sev-count" id="cnt-medium">0</div>
-          <div class="sev-name">Medium</div>
-        </div>
-        <div class="sev-badge low" onclick="filterFindings('low')">
-          <div class="sev-count" id="cnt-low">0</div>
-          <div class="sev-name">Low</div>
-        </div>
-        <div class="sev-badge info" onclick="filterFindings('info')">
-          <div class="sev-count" id="cnt-info">0</div>
-          <div class="sev-name">Info</div>
-        </div>
+  <div id="tab-flow" class="tab-content">
+    <div id="flow-map-container">
+      <div class="card-header"><div><div class="card-title">Network Traffic Flow Map</div><div class="card-subtitle">Based on interfaces and active rules · Scroll to zoom · Drag to pan</div></div></div>
+      <div id="flow-map"></div>
+      <div class="flow-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>WAN/Internet</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#3d7fff"></div>Internal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>WireGuard</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#36d399;height:3px;border-radius:2px;width:18px"></div>PASS rule</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff3860;height:3px;border-radius:2px;width:18px"></div>BLOCK rule</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;height:3px;border-radius:2px;width:18px"></div>NAT forward</div>
       </div>
     </div>
+  </div>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('findings')">🔍 Findings</div>
-      <div class="tab" onclick="switchTab('flow')">🗺 Traffic Flow</div>
-      <div class="tab" onclick="switchTab('rules')">📋 Firewall Rules</div>
-      <div class="tab" onclick="switchTab('nat')">↔ NAT Rules</div>
-      <div class="tab" onclick="switchTab('interfaces')">🌐 Interfaces</div>
-      <div class="tab" onclick="switchTab('vpn')">🔐 VPN</div>
-      <div class="tab" onclick="switchTab('system')">⚙ System</div>
+  <div id="tab-rules" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Firewall Rules</div><div class="card-subtitle" id="rules-count-label">—</div></div></div>
+      <div style="overflow-x:auto">
+        <table class="rules-table">
+          <thead><tr><th>Seq</th><th>Action</th><th>Interface</th><th>Dir</th><th>Proto</th><th>Source</th><th>Destination</th><th>Port</th><th>Log</th><th>Description</th></tr></thead>
+          <tbody id="rules-tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="rules-pagination"></div>
     </div>
+  </div>
 
-    <!-- FINDINGS TAB -->
-    <div id="tab-findings" class="tab-content active">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Security Findings</div>
-            <div class="card-subtitle">Sorted by severity · Click a finding for details</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="filter-bar" id="findings-filter">
-            <button class="filter-btn active" onclick="filterFindings('all', this)">All</button>
-            <button class="filter-btn" onclick="filterFindings('critical', this)">Critical</button>
-            <button class="filter-btn" onclick="filterFindings('high', this)">High</button>
-            <button class="filter-btn" onclick="filterFindings('medium', this)">Medium</button>
-            <button class="filter-btn" onclick="filterFindings('low', this)">Low</button>
-            <button class="filter-btn" onclick="filterFindings('info', this)">Info</button>
-          </div>
-          <div id="findings-list"></div>
-        </div>
+  <div id="tab-nat" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">NAT / Port Forward Rules</div><div class="card-subtitle" id="nat-count-label">—</div></div></div>
+      <div style="overflow-x:auto">
+        <table class="rules-table">
+          <thead><tr><th>#</th><th>Interface</th><th>Proto</th><th>Destination Port</th><th>→ Target</th><th>Target Port</th><th>Category</th><th>Description</th></tr></thead>
+          <tbody id="nat-tbody"></tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <!-- FLOW TAB -->
-    <div id="tab-flow" class="tab-content">
-      <div id="flow-map-container">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Network Traffic Flow Map</div>
-            <div class="card-subtitle">Based on your interfaces and active firewall rules · Drag to pan · Scroll to zoom</div>
-          </div>
-        </div>
-        <div id="flow-map"></div>
-        <div class="flow-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div> WAN / Internet</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#3d7fff"></div> Internal</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> VPN</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#36d399"></div> PASS rule</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#ff3860"></div> BLOCK rule</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div> NAT</div>
-        </div>
+  <div id="tab-interfaces" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Network Interfaces</div></div>
+      <div class="card-body"><div class="ifaces-grid" id="ifaces-grid"></div></div>
+    </div>
+  </div>
+
+  <div id="tab-vpn" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">VPN &amp; WireGuard</div></div>
+      <div class="card-body">
+        <div class="vpn-grid" id="vpn-stats-grid"></div>
+        <div id="wg-servers-section"></div>
+        <div id="wg-clients-section"></div>
+        <div id="ovpn-section"></div>
       </div>
     </div>
+  </div>
 
-    <!-- RULES TAB -->
-    <div id="tab-rules" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Firewall Rules</div>
-            <div class="card-subtitle" id="rules-count-label">—</div>
-          </div>
-        </div>
-        <div class="card-body" style="padding:0; overflow-x:auto">
-          <table class="rules-table" id="rules-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Action</th>
-                <th>Interface</th>
-                <th>Proto</th>
-                <th>Source</th>
-                <th>Destination</th>
-                <th>Description</th>
-                <th>Log</th>
-              </tr>
-            </thead>
-            <tbody id="rules-tbody"></tbody>
-          </table>
-          <div class="pagination" style="padding:16px 24px" id="rules-pagination"></div>
-        </div>
+  <div id="tab-aliases" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Firewall Aliases</div></div>
+      <div style="overflow-x:auto">
+        <table class="rules-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Content Preview</th></tr></thead>
+          <tbody id="aliases-tbody"></tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <!-- NAT TAB -->
-    <div id="tab-nat" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">NAT Rules</div>
-            <div class="card-subtitle" id="nat-count-label">—</div>
-          </div>
-        </div>
-        <div class="card-body" style="padding:0; overflow-x:auto">
-          <table class="rules-table" id="nat-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Interface</th>
-                <th>Proto</th>
-                <th>Source</th>
-                <th>Destination</th>
-                <th>Target</th>
-                <th>Port</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody id="nat-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+  <div id="tab-system" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">System Information</div></div>
+      <div class="card-body"><div class="info-grid" id="system-info-grid"></div></div>
     </div>
+  </div>
 
-    <!-- INTERFACES TAB -->
-    <div id="tab-interfaces" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Network Interfaces</div>
-        </div>
-        <div class="card-body">
-          <div class="ifaces-grid" id="ifaces-grid"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- VPN TAB -->
-    <div id="tab-vpn" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">VPN Configuration</div>
-        </div>
-        <div class="card-body">
-          <div class="vpn-summary-grid" id="vpn-summary-grid"></div>
-          <div id="vpn-detail"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SYSTEM TAB -->
-    <div id="tab-system" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">System Information</div>
-        </div>
-        <div class="card-body">
-          <div class="info-grid" id="system-info-grid"></div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /dashboard -->
+</div><!-- /dashboard -->
 </div><!-- /app -->
 
 <div id="tooltip"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════
 let appData = null;
 let currentFilter = 'all';
 let rulesPage = 0;
-const RULES_PER_PAGE = 25;
+const RULES_PER_PAGE = 30;
 
-// ═══════════════════════════════════════════════════════
-// FILE UPLOAD
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f) uploadFile(f);
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) uploadFile(e.target.files[0]); });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if(f) uploadFile(f); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) uploadFile(e.target.files[0]); });
 
 async function uploadFile(file) {
-  if (!file.name.endsWith('.xml')) {
-    alert('Please upload an OPNSense XML backup file.');
-    return;
-  }
-
-  // Show loading
+  if(!file.name.endsWith('.xml')) { alert('Please upload an OPNSense XML backup file.'); return; }
   document.getElementById('upload-screen').style.display = 'none';
-  const loading = document.getElementById('loading-screen');
-  loading.style.display = 'flex';
-
-  // Animate steps
+  document.getElementById('loading-screen').style.display = 'flex';
+  for(let i=1; i<=6; i++) document.getElementById(`step-${i}`).className = 'loading-step';
   const steps = [1,2,3,4,5,6];
-  for (let i = 0; i < steps.length; i++) {
-    setTimeout(() => {
-      if (i > 0) document.getElementById(`step-${steps[i-1]}`).className = 'loading-step done';
-      document.getElementById(`step-${steps[i]}`).className = 'loading-step active';
-    }, i * 400);
-  }
-
+  steps.forEach((s,i) => setTimeout(() => {
+    if(i>0) document.getElementById(`step-${steps[i-1]}`).className = 'loading-step done';
+    document.getElementById(`step-${s}`).className = 'loading-step active';
+  }, i*350));
   const form = new FormData();
   form.append('file', file);
-
   try {
-    const resp = await fetch('/api/analyze', { method: 'POST', body: form });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Analysis failed');
-    }
+    const resp = await fetch('/api/analyze', { method:'POST', body:form });
+    if(!resp.ok) { const err = await resp.json(); throw new Error(err.detail || 'Analysis failed'); }
     appData = await resp.json();
     setTimeout(() => {
-      loading.style.display = 'none';
+      document.getElementById('loading-screen').style.display = 'none';
       renderDashboard(appData);
-    }, 700);
-  } catch (err) {
-    loading.style.display = 'none';
+    }, 500);
+  } catch(err) {
+    document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('upload-screen').style.display = 'flex';
     alert('Error: ' + err.message);
   }
@@ -1343,450 +460,422 @@ function resetApp() {
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('upload-screen').style.display = 'flex';
   fileInput.value = '';
-  // Reset steps
-  for (let i=1; i<=6; i++) document.getElementById(`step-${i}`).className = 'loading-step';
+  for(let i=1;i<=6;i++) document.getElementById(`step-${i}`).className = 'loading-step';
 }
 
-// ═══════════════════════════════════════════════════════
-// RENDER DASHBOARD
-// ═══════════════════════════════════════════════════════
-function renderDashboard(data) {
-  const dash = document.getElementById('dashboard');
-  dash.style.display = 'flex';
-
-  // Meta
-  document.getElementById('meta-filename').textContent = data.meta.filename;
-  document.getElementById('meta-rules').textContent = data.meta.rules_count;
-  document.getElementById('meta-ifaces').textContent = data.meta.interfaces_count;
-  document.getElementById('meta-hash').textContent = data.meta.file_hash;
-
-  // Score
-  renderScore(data.analysis.score);
-
-  // Summary counts
-  const s = data.analysis.summary;
-  document.getElementById('cnt-critical').textContent = s.critical;
-  document.getElementById('cnt-high').textContent = s.high;
-  document.getElementById('cnt-medium').textContent = s.medium;
-  document.getElementById('cnt-low').textContent = s.low;
-  document.getElementById('cnt-info').textContent = s.info;
-
-  // Render all tabs
-  renderFindings(data.analysis.findings, 'all');
-  renderFlowMap(data.traffic_flow);
-  renderRules(data.rules_preview);
-  renderNat(data.nat_preview);
-  renderInterfaces(data.interfaces);
-  renderVPN(data.vpn_summary);
-  renderSystem(data.system, data.user_summary);
+// ═══════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════
+function renderDashboard(d) {
+  document.getElementById('dashboard').style.display = 'flex';
+  document.getElementById('meta-filename').textContent = d.meta.filename;
+  document.getElementById('meta-rules').textContent = d.meta.rules_count;
+  document.getElementById('meta-ifaces').textContent = d.meta.interfaces_count;
+  document.getElementById('meta-vlans').textContent = d.meta.vlans_count;
+  document.getElementById('meta-wg').textContent = d.meta.wg_tunnels;
+  document.getElementById('meta-hash').textContent = d.meta.file_hash;
+  renderScore(d.analysis.score);
+  const s = d.analysis.summary;
+  ['critical','high','medium','low','info'].forEach(k => document.getElementById(`cnt-${k}`).textContent = s[k]);
+  renderFindings(d.analysis.findings, 'all');
+  renderFlowMap(d.traffic_flow);
+  renderRules(d.rules_preview);
+  renderNat(d.nat_preview);
+  renderInterfaces(d.interfaces);
+  renderVPN(d.wireguard, d.openvpn_summary);
+  renderAliases(d.aliases);
+  renderSystem(d.system, d.user_summary, d.dns, d.syslog, d.ids);
 }
 
-// ─── SCORE ───────────────────────────────────────────
 function renderScore(score) {
-  const circle = document.getElementById('score-circle');
+  const c = document.getElementById('score-circle');
   const circumference = 276.46;
-  const offset = circumference - (score / 100) * circumference;
-
-  let color, grade, label;
-  if (score >= 85) { color = '#36d399'; grade = 'GOOD'; label = 'Well Configured'; }
-  else if (score >= 70) { color = '#3d7fff'; grade = 'FAIR'; label = 'Improvements Needed'; }
-  else if (score >= 50) { color = '#ffb830'; grade = 'POOR'; label = 'Several Issues Found'; }
-  else { color = '#ff3860'; grade = 'CRITICAL'; label = 'Immediate Action Required'; }
-
+  let color, label;
+  if(score>=85){color='#36d399';label='Well Configured';}
+  else if(score>=70){color='#3d7fff';label='Good, Improvements Possible';}
+  else if(score>=50){color='#ffb830';label='Issues Found';}
+  else{color='#ff3860';label='Critical Issues Present';}
   document.getElementById('score-value').textContent = score;
   document.getElementById('score-value').style.color = color;
   document.getElementById('score-grade').textContent = label;
   document.getElementById('score-grade').style.color = color;
-
-  circle.style.stroke = color;
-  setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+  c.style.stroke = color;
+  setTimeout(() => { c.style.strokeDashoffset = circumference - (score/100)*circumference; }, 100);
 }
 
-// ─── FINDINGS ────────────────────────────────────────
+// ═══════════════════════════════════
+// FINDINGS
+// ═══════════════════════════════════
 function renderFindings(findings, filter) {
   const container = document.getElementById('findings-list');
-  const filtered = filter === 'all' ? findings : findings.filter(f => f.severity === filter);
-
-  if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state">✅ No ${filter === 'all' ? '' : filter} findings</div>`;
-    return;
-  }
-
+  const filtered = filter==='all' ? findings : findings.filter(f=>f.severity===filter);
+  if(!filtered.length){ container.innerHTML=`<div class="empty-state">✅ No ${filter==='all'?'':filter+' '}findings</div>`; return; }
   container.innerHTML = filtered.map(f => `
     <div class="finding-item">
+      <div><div class="finding-sev sev-pill-${f.severity}">${f.severity}</div></div>
       <div>
-        <div class="finding-sev sev-pill-${f.severity}">${f.severity}</div>
-      </div>
-      <div class="finding-content">
         <div class="finding-category">${f.category}</div>
         <div class="finding-title">${f.title}</div>
         <div class="finding-detail">${f.detail}</div>
         <div class="finding-rec">💡 ${f.recommendation}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function filterFindings(sev, btn) {
   currentFilter = sev;
-  if (btn) {
-    document.querySelectorAll('#findings-filter .filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  if(btn) {
+    // Update filter buttons — could be in either location
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    // Activate all buttons with same filter value
+    document.querySelectorAll('.filter-btn').forEach(b => { if(b.getAttribute('onclick').includes(`'${sev}'`)) b.classList.add('active'); });
   }
-  if (appData) renderFindings(appData.analysis.findings, sev);
+  if(appData) renderFindings(appData.analysis.findings, sev);
+  // Switch to findings tab
+  switchTab('findings', document.querySelector('.tab'));
 }
 
-// ─── RULES ────────────────────────────────────────────
+// ═══════════════════════════════════
+// FIREWALL RULES
+// ═══════════════════════════════════
 function renderRules(rules) {
-  const label = document.getElementById('rules-count-label');
-  label.textContent = `${rules.length} rules total`;
-  document.getElementById('rules-count-label').textContent = `${rules.length} rules total`;
+  document.getElementById('rules-count-label').textContent = `${rules.length} rules total · sorted by sequence`;
   rulesPage = 0;
-  renderRulesPage(rules, rulesPage);
+  renderRulesPage(rules);
 }
 
-function renderRulesPage(rules, page) {
-  const tbody = document.getElementById('rules-tbody');
-  const start = page * RULES_PER_PAGE;
+function renderRulesPage(rules) {
+  const start = rulesPage * RULES_PER_PAGE;
   const slice = rules.slice(start, start + RULES_PER_PAGE);
-
+  const tbody = document.getElementById('rules-tbody');
   tbody.innerHTML = slice.map(r => {
-    const disabled = r.disabled === '1' || r.disabled === 'true';
-    const actionClass = r.action === 'pass' ? 'action-pass' : r.action === 'block' ? 'action-block' : 'action-reject';
-    const src = formatEndpoint(r.source);
-    const dst = formatEndpoint(r.destination);
-    return `<tr class="${disabled ? 'rule-disabled' : ''}">
-      <td style="color:var(--text3);font-family:'IBM Plex Mono',monospace">${r.index + 1}</td>
-      <td><span class="${actionClass}">${r.action || '?'}</span>${disabled ? ' <span class="tag">off</span>' : ''}</td>
-      <td><span class="tag">${r.interface || 'any'}</span></td>
-      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3)">${r.protocol || 'any'}</span></td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${src}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${dst}</td>
-      <td style="color:var(--text2)">${r.descr || '<span style="color:var(--text3)">(no desc)</span>'}</td>
-      <td>${r.log === '1' ? '<span style="color:var(--low);font-size:11px">✓ LOG</span>' : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+    const disabled = r.enabled !== '1';
+    const actionCls = r.action==='pass'?'action-pass':r.action==='block'?'action-block':'action-reject';
+    const srcAny = r.source==='any';
+    const dstAny = r.destination==='any';
+    return `<tr class="${disabled?'rule-disabled':''}">
+      <td class="mono" style="color:var(--text3)">${r.sequence||r.index+1}</td>
+      <td><span class="${actionCls}">${r.action}</span>${disabled?' <span class="tag">off</span>':''}</td>
+      <td><span class="tag">${r.interface||'any'}</span></td>
+      <td style="color:var(--text3)" class="mono">${r.direction||'in'}</td>
+      <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
+      <td class="mono" style="${srcAny?'color:var(--critical)':''}">${r.source||'any'}</td>
+      <td class="mono" style="${dstAny?'color:var(--medium)':''}">${r.destination||'any'}</td>
+      <td class="mono" style="color:var(--text3)">${r.dest_port||'—'}</td>
+      <td>${r.log==='1'?'<span style="color:var(--low);font-size:11px">✓</span>':'<span style="color:var(--border2)">—</span>'}</td>
+      <td style="color:var(--text2);max-width:200px">${r.description||'<span style="color:var(--text3)">(none)</span>'}</td>
     </tr>`;
   }).join('');
 
-  // Pagination
-  const totalPages = Math.ceil(rules.length / RULES_PER_PAGE);
-  const pg = document.getElementById('rules-pagination');
-  pg.innerHTML = `
-    <button class="page-btn" onclick="goRulesPage(-1)" ${page === 0 ? 'disabled' : ''}>← Prev</button>
-    <span class="page-info">Page ${page+1} / ${totalPages}</span>
-    <button class="page-btn" onclick="goRulesPage(1)" ${page >= totalPages-1 ? 'disabled' : ''}>Next →</button>
-  `;
+  const total = Math.ceil(rules.length / RULES_PER_PAGE);
+  document.getElementById('rules-pagination').innerHTML = `
+    <button class="page-btn" onclick="goRulesPage(-1)" ${rulesPage===0?'disabled':''}>← Prev</button>
+    <span class="page-info">${rulesPage+1} / ${total}</span>
+    <button class="page-btn" onclick="goRulesPage(1)" ${rulesPage>=total-1?'disabled':''}>Next →</button>`;
 }
 
 function goRulesPage(delta) {
-  const rules = appData.rules_preview;
-  const totalPages = Math.ceil(rules.length / RULES_PER_PAGE);
-  rulesPage = Math.max(0, Math.min(totalPages - 1, rulesPage + delta));
-  renderRulesPage(rules, rulesPage);
+  const total = Math.ceil(appData.rules_preview.length / RULES_PER_PAGE);
+  rulesPage = Math.max(0, Math.min(total-1, rulesPage+delta));
+  renderRulesPage(appData.rules_preview);
 }
 
-function formatEndpoint(ep) {
-  if (!ep || typeof ep !== 'object') return 'any';
-  if (ep.any !== undefined) return '<span style="color:var(--critical)">ANY</span>';
-  if (ep.network) return ep.network;
-  if (ep.address) return ep.address;
-  return 'any';
-}
-
-// ─── NAT ─────────────────────────────────────────────
+// ═══════════════════════════════════
+// NAT
+// ═══════════════════════════════════
 function renderNat(nat) {
-  document.getElementById('nat-count-label').textContent = `${nat.length} port forward rules`;
+  document.getElementById('nat-count-label').textContent = `${nat.length} rules`;
   const tbody = document.getElementById('nat-tbody');
-  if (!nat.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No NAT rules found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = nat.map(r => `
-    <tr>
-      <td style="color:var(--text3);font-family:'IBM Plex Mono',monospace">${r.index + 1}</td>
-      <td><span class="tag">${r.interface || 'wan'}</span></td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3)">${r.protocol || 'any'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${formatEndpoint(r.source)}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${formatEndpoint(r.destination)}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${r.target || '—'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r.local_port || '—'}</td>
-      <td style="color:var(--text2)">${r.descr || '—'}</td>
-    </tr>
-  `).join('');
-}
-
-// ─── INTERFACES ──────────────────────────────────────
-function renderInterfaces(interfaces) {
-  const grid = document.getElementById('ifaces-grid');
-  const entries = Object.entries(interfaces);
-  if (!entries.length) {
-    grid.innerHTML = '<div class="empty-state">No interfaces found</div>';
-    return;
-  }
-  grid.innerHTML = entries.map(([name, iface]) => {
-    const typeClass = iface.type === 'wan' ? 'iface-type-wan' : 'iface-type-lan';
-    const bogon = iface.blockbogons === '1';
-    return `
-      <div class="iface-card">
-        <div class="iface-name">
-          ${iface.descr || name}
-          <span class="iface-type-badge ${typeClass}">${iface.type.toUpperCase()}</span>
-        </div>
-        <div class="iface-detail" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);margin-top:6px">KEY: ${name}</div>
-        <div class="iface-ip">${iface.ipaddr || 'DHCP'}${iface.subnet ? '/' + iface.subnet : ''}</div>
-        <div class="iface-flags">
-          <span class="iface-flag ${iface.enabled ? 'flag-ok' : 'flag-warn'}">${iface.enabled ? 'ENABLED' : 'DISABLED'}</span>
-          ${iface.type === 'wan' ? `<span class="iface-flag ${bogon ? 'flag-ok' : 'flag-warn'}">${bogon ? 'BOGONS BLOCKED' : 'NO BOGON BLOCK'}</span>` : ''}
-        </div>
-      </div>
-    `;
+  if(!nat.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No NAT rules found</td></tr>'; return; }
+  tbody.innerHTML = nat.map(r => {
+    const disabled = r.disabled==='1';
+    return `<tr class="${disabled?'rule-disabled':''}">
+      <td class="mono" style="color:var(--text3)">${r.index+1}</td>
+      <td><span class="tag">${r.interface||'wan'}</span>${disabled?' <span class="tag">off</span>':''}</td>
+      <td class="mono" style="color:var(--text3)">${r.protocol||'any'}</td>
+      <td class="mono">${r.dest_port||'any'}</td>
+      <td class="mono" style="color:var(--accent)">${r.target||'—'}</td>
+      <td class="mono">${r.local_port||'—'}</td>
+      <td style="color:var(--text3)">${r.category||'—'}</td>
+      <td style="color:var(--text2)">${r.descr||'—'}</td>
+    </tr>`;
   }).join('');
 }
 
-// ─── VPN ─────────────────────────────────────────────
-function renderVPN(vpn) {
-  const grid = document.getElementById('vpn-summary-grid');
-  grid.innerHTML = `
-    <div class="stat-mini">
-      <div class="stat-mini-val">${vpn.openvpn_servers}</div>
-      <div class="stat-mini-label">OpenVPN Servers</div>
-    </div>
-    <div class="stat-mini">
-      <div class="stat-mini-val">${vpn.openvpn_clients}</div>
-      <div class="stat-mini-label">OpenVPN Clients</div>
-    </div>
-    <div class="stat-mini">
-      <div class="stat-mini-val">${vpn.ipsec_phases}</div>
-      <div class="stat-mini-label">IPsec Phase1</div>
-    </div>
-  `;
-
-  const detail = document.getElementById('vpn-detail');
-  const total = vpn.openvpn_servers + vpn.openvpn_clients + vpn.ipsec_phases;
-  if (total === 0) {
-    detail.innerHTML = '<div class="empty-state" style="margin-top:16px">No VPN configuration found in this backup.</div>';
-  } else {
-    detail.innerHTML = `<div style="margin-top:16px;padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.7">
-      VPN configuration was detected. Detailed cipher/key analysis is shown in the Findings tab.<br>
-      <span style="color:var(--text3);font-size:12px">Sensitive values (certificates, keys, PSKs) are fully redacted and never processed.</span>
+// ═══════════════════════════════════
+// INTERFACES
+// ═══════════════════════════════════
+function renderInterfaces(interfaces) {
+  const grid = document.getElementById('ifaces-grid');
+  const entries = Object.entries(interfaces);
+  if(!entries.length){ grid.innerHTML='<div class="empty-state">No interfaces found</div>'; return; }
+  grid.innerHTML = entries.map(([key, iface]) => {
+    const tc = iface.type==='wan'?'iface-type-wan':iface.type==='wireguard'?'iface-type-wireguard':'iface-type-internal';
+    const bogon = iface.blockbogons==='1';
+    const priv  = iface.blockpriv==='1';
+    return `<div class="iface-card">
+      <div class="iface-name">
+        ${iface.descr||key}
+        <span class="iface-type-badge ${tc}">${iface.type}</span>
+      </div>
+      <div class="iface-key">${iface.if||key}</div>
+      <div class="iface-ip">${iface.ipaddr||'—'}${iface.subnet?'/'+iface.subnet:''}</div>
+      <div class="iface-flags">
+        <span class="${iface.enabled?'flag-ok':'flag-warn'}">${iface.enabled?'UP':'DOWN'}</span>
+        ${iface.type==='wan'?`<span class="${bogon?'flag-ok':'flag-warn'}">${bogon?'BOGONS BLOCKED':'BOGONS OPEN'}</span>`:'' }
+        ${iface.type==='wan'?`<span class="${priv?'flag-ok':'flag-warn'}">${priv?'PRIV BLOCKED':'PRIV OPEN'}</span>`:'' }
+      </div>
     </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// VPN / WIREGUARD
+// ═══════════════════════════════════
+function renderVPN(wg, ovpn) {
+  const servers = wg.servers||[];
+  const clients = wg.clients||[];
+  document.getElementById('vpn-stats-grid').innerHTML = `
+    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${servers.length}</div><div class="stat-mini-label">WG Instances (Local)</div></div>
+    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--vpn)">${clients.length}</div><div class="stat-mini-label">WG Peers / Clients</div></div>
+    <div class="stat-mini"><div class="stat-mini-val">${ovpn.servers}</div><div class="stat-mini-label">OpenVPN Servers</div></div>
+    <div class="stat-mini"><div class="stat-mini-val">${ovpn.clients}</div><div class="stat-mini-label">OpenVPN Clients</div></div>`;
+
+  // WireGuard server instances
+  const srvSection = document.getElementById('wg-servers-section');
+  if(servers.length) {
+    srvSection.innerHTML = `<div style="font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin:20px 0 12px">WireGuard Instances</div>` +
+      servers.map(s => `
+        <div class="wg-tunnel-card">
+          <div class="wg-tunnel-name">⬡ ${s.name} <span class="${s.enabled==='1'?'flag-ok':'flag-warn'}">${s.enabled==='1'?'ACTIVE':'INACTIVE'}</span></div>
+          <div class="wg-detail-grid">
+            <div class="wg-detail"><div class="wg-detail-label">Tunnel Address</div><div class="wg-detail-val">${s.tunneladdress||'—'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">Listen Port</div><div class="wg-detail-val">${s.port||'(auto)'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">DNS</div><div class="wg-detail-val">${s.dns||'—'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">MTU</div><div class="wg-detail-val">${s.mtu||'default'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">Routes Disabled</div><div class="wg-detail-val">${s.disableroutes==='1'?'Yes (client mode)':'No'}</div></div>
+          </div>
+        </div>`).join('');
+  } else {
+    srvSection.innerHTML = '';
+  }
+
+  // WireGuard peers/clients
+  const cliSection = document.getElementById('wg-clients-section');
+  if(clients.length) {
+    cliSection.innerHTML = `<div style="font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin:20px 0 12px">WireGuard Peers</div>` +
+      clients.map(c => `
+        <div class="wg-tunnel-card">
+          <div class="wg-tunnel-name">⬡ ${c.name} <span class="${c.enabled==='1'?'flag-ok':'flag-warn'}">${c.enabled==='1'?'ENABLED':'DISABLED'}</span></div>
+          <div class="wg-detail-grid">
+            <div class="wg-detail"><div class="wg-detail-label">Tunnel Address</div><div class="wg-detail-val">${c.tunneladdress||'—'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">Server Endpoint</div><div class="wg-detail-val">${c.serveraddress||'(local peer)'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">Server Port</div><div class="wg-detail-val">${c.serverport||'—'}</div></div>
+            <div class="wg-detail"><div class="wg-detail-label">Keepalive</div><div class="wg-detail-val">${c.keepalive||'—'}s</div></div>
+          </div>
+        </div>`).join('');
+  } else {
+    cliSection.innerHTML = '';
+  }
+
+  if(!servers.length && !clients.length && !ovpn.servers && !ovpn.clients) {
+    document.getElementById('ovpn-section').innerHTML = '<div class="empty-state" style="margin-top:12px">No VPN configuration found.</div>';
   }
 }
 
-// ─── SYSTEM ──────────────────────────────────────────
-function renderSystem(sys, users) {
-  const grid = document.getElementById('system-info-grid');
-  const items = [
-    ['Hostname', sys?.hostname || '—'],
-    ['Domain', sys?.domain || '—'],
-    ['Timezone', sys?.timezone || '—'],
-    ['Version', sys?.version || '—'],
-    ['Language', sys?.language || '—'],
-    ['Total Users', users?.total_users ?? '—'],
-    ['Admin Count', users?.admin_count ?? '—'],
-    ['Admin Accounts', (users?.admin_users || []).join(', ') || '—'],
-  ];
-  grid.innerHTML = items.map(([label, value]) => `
-    <div class="info-item">
-      <div class="info-label">${label}</div>
-      <div class="info-value">${value}</div>
-    </div>
-  `).join('');
+// ═══════════════════════════════════
+// ALIASES
+// ═══════════════════════════════════
+function renderAliases(aliases) {
+  const tbody = document.getElementById('aliases-tbody');
+  if(!aliases||!aliases.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--text3)">No aliases</td></tr>'; return; }
+  tbody.innerHTML = aliases.map(a => {
+    const preview = (a.content||'').split('\n').slice(0,3).join(', ') + (a.content&&a.content.split('\n').length>3?' ...':'');
+    return `<tr>
+      <td class="mono" style="color:var(--accent)">${a.name}</td>
+      <td><span class="tag">${a.type||'?'}</span></td>
+      <td style="color:var(--text2)">${a.description||'—'}</td>
+      <td class="mono" style="font-size:11px;color:var(--text3);max-width:280px">${preview||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// TRAFFIC FLOW MAP (D3)
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════
+// SYSTEM
+// ═══════════════════════════════════
+function renderSystem(sys, users, dns, syslog, ids) {
+  const items = [
+    ['Hostname',       sys?.hostname||'—'],
+    ['Domain',         sys?.domain||'—'],
+    ['Timezone',       sys?.timezone||'—'],
+    ['Version',        sys?.version||'—'],
+    ['Total Users',    users?.total_users??'—'],
+    ['Admin Accounts', (users?.admin_users||[]).join(', ')||'—'],
+    ['DNSSEC',         dns?.dnssec==='1'?'✅ Enabled':'⚠ Disabled'],
+    ['DNS Port',       dns?.port||'53'],
+    ['Hide DNS ID',    dns?.hideidentity==='1'?'✅ Yes':'⚠ No'],
+    ['Remote Syslog',  syslog?.remote_destinations>0?`✅ ${syslog.remote_destinations} destination(s)`:'⚠ None configured'],
+    ['IDS/IPS',        ids?.enabled==='1'?`✅ Active (${ids.active_rules} rules)`:'⚠ Disabled'],
+  ];
+  document.getElementById('system-info-grid').innerHTML = items.map(([l,v]) => `
+    <div class="info-item"><div class="info-label">${l}</div><div class="info-value">${v}</div></div>`).join('');
+}
+
+// ═══════════════════════════════════
+// FLOW MAP (D3)
+// ═══════════════════════════════════
 function renderFlowMap(flow) {
   const container = document.getElementById('flow-map');
   container.innerHTML = '';
-
   const { nodes, edges } = flow;
+  if(!nodes.length){ container.innerHTML='<div class="empty-state" style="padding-top:80px">No interface data for flow map.</div>'; return; }
 
-  if (!nodes.length) {
-    container.innerHTML = '<div class="empty-state" style="padding-top:80px">No interface data available for flow map.</div>';
-    return;
-  }
+  const W = container.clientWidth || 900;
+  const H = 560;
+  const CX = W/2, CY = H/2;
 
-  const W = container.clientWidth || 800;
-  const H = 520;
-
-  const svg = d3.select('#flow-map')
-    .append('svg')
-    .attr('width', W)
-    .attr('height', H);
-
-  // Defs for arrows
+  const svg = d3.select('#flow-map').append('svg').attr('width',W).attr('height',H);
   const defs = svg.append('defs');
 
-  const arrowColors = { pass: '#36d399', block: '#ff3860', wan: '#ff6b35', vpn: '#a855f7', nat: '#06b6d4', default: '#7a90b0' };
-
-  Object.entries(arrowColors).forEach(([key, color]) => {
-    defs.append('marker')
-      .attr('id', `arrow-${key}`)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
-      .attr('refX', 6)
-      .attr('refY', 3)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,0 L0,6 L8,3 z')
-      .attr('fill', color)
-      .attr('opacity', 0.8);
+  // Arrow markers
+  const arrowColors = {wan:'#ff6b35',pass:'#36d399',block:'#ff3860',nat:'#06b6d4',vpn:'#a855f7',vpn_out:'#a855f7',default:'#4a5a7a'};
+  Object.entries(arrowColors).forEach(([k,col]) => {
+    defs.append('marker').attr('id',`arr-${k}`).attr('markerWidth',7).attr('markerHeight',7).attr('refX',6).attr('refY',3).attr('orient','auto')
+      .append('path').attr('d','M0,0 L0,6 L7,3 z').attr('fill',col).attr('opacity',.85);
   });
 
-  const g = svg.append('g').attr('class', 'main-g');
+  const g = svg.append('g');
 
-  // Zoom/pan
-  svg.call(d3.zoom()
-    .scaleExtent([0.4, 3])
-    .on('zoom', (event) => g.attr('transform', event.transform))
-  );
+  svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom', ev => g.attr('transform', ev.transform)));
 
-  // Position nodes in a meaningful layout
-  const nodeCount = nodes.length;
-  const wanNodes = nodes.filter(n => n.type === 'internet' || n.type === 'wan');
-  const internalNodes = nodes.filter(n => n.type === 'internal' || n.type === 'lan');
-  const vpnNodes = nodes.filter(n => n.type === 'vpn');
+  // ── Layout ──────────────────────────────────────────────────
+  // Assign positions by type using a clear left→right flow
+  // internet | WAN | internal (top→bottom) | WireGuard (right)
 
-  // Layout: internet on left, WAN next, internals spread right, VPN on far right
-  const allPositioned = [];
-
-  let ix = 80;
-  wanNodes.forEach((n, i) => {
-    n._x = ix; n._y = H / 2 + (i - wanNodes.length/2) * 100;
-    allPositioned.push(n);
-    ix += 180;
+  const byType = {internet:[], wan:[], internal:[], wireguard:[], vpn_out:[]};
+  nodes.forEach(n => {
+    const bucket = byType[n.type] || byType.internal;
+    bucket.push(n);
   });
 
-  const intSpacing = internalNodes.length > 1 ? (H - 80) / (internalNodes.length - 1) : 0;
-  internalNodes.forEach((n, i) => {
-    n._x = ix + 80;
-    n._y = internalNodes.length === 1 ? H/2 : 40 + i * intSpacing;
-    allPositioned.push(n);
-  });
+  const COL = {internet: 0.08, wan: 0.25, internal: 0.55, wireguard: 0.82, vpn_out: 0.82};
 
-  if (vpnNodes.length) {
-    ix += 160;
-    vpnNodes.forEach((n, i) => {
-      n._x = ix + 80;
-      n._y = H/2 + (i - vpnNodes.length/2) * 90;
-      allPositioned.push(n);
+  function layoutColumn(arr, xFrac, topFrac=0.15, bottomFrac=0.85) {
+    const x = W * xFrac;
+    const span = H * (bottomFrac - topFrac);
+    arr.forEach((n,i) => {
+      n._x = x;
+      n._y = arr.length===1 ? CY : H*topFrac + (span/(arr.length-1))*i;
     });
   }
 
-  // Center the whole layout
-  const xs = allPositioned.map(n => n._x);
-  const ys = allPositioned.map(n => n._y);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  allPositioned.forEach(n => { n._x += W/2 - cx; n._y += H/2 - cy; });
+  layoutColumn(byType.internet, COL.internet, 0.45, 0.55);
+  layoutColumn(byType.wan, COL.wan, 0.3, 0.7);
+  layoutColumn(byType.internal, COL.internal, 0.08, 0.92);
+
+  // Split WireGuard: outbound clients go bottom-right, local instances top-right
+  const wgLocal = byType.wireguard;
+  const wgOut   = byType.vpn_out;
+  layoutColumn(wgLocal, 0.85, 0.1, 0.5);
+  layoutColumn(wgOut,   0.85, 0.6, 0.95);
 
   const nodeById = {};
   nodes.forEach(n => { nodeById[n.id] = n; });
 
-  // Draw edges
+  // ── Draw edges ───────────────────────────────────────────────
+  const nodeW=110, nodeH=38;
+
+  function getEdgeColor(type) {
+    return arrowColors[type]||arrowColors.default;
+  }
+
   edges.forEach(edge => {
-    const src = nodeById[edge.from];
-    const dst = nodeById[edge.to];
-    if (!src || !dst || !src._x || !dst._x) return;
+    const s = nodeById[edge.from];
+    const t = nodeById[edge.to];
+    if(!s||!t||s._x===undefined||t._x===undefined) return;
 
-    const color = arrowColors[edge.type] || arrowColors.default;
-    const arrowId = arrowColors[edge.type] ? `arrow-${edge.type}` : 'arrow-default';
+    const col = getEdgeColor(edge.type);
+    const dx=t._x-s._x, dy=t._y-s._y;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=dx/len, ny=dy/len;
+    const offS = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 4;
+    const offT = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 10;
+    const x1=s._x+nx*offS, y1=s._y+ny*offS;
+    const x2=t._x-nx*offT, y2=t._y-ny*offT;
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    // slight curve to avoid overlapping parallel edges
+    const cx2=mx - ny*20, cy2=my + nx*20;
 
-    const dx = dst._x - src._x, dy = dst._y - src._y;
-    const len = Math.sqrt(dx*dx + dy*dy);
-    const nx = dx/len, ny = dy/len;
-    const nodeW = 90, nodeH = 36;
-    const offsetSrc = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 4;
-    const offsetDst = Math.abs(nx)*nodeW/2 + Math.abs(ny)*nodeH/2 + 10;
-
-    const x1 = src._x + nx*offsetSrc, y1 = src._y + ny*offsetSrc;
-    const x2 = dst._x - nx*offsetDst, y2 = dst._y - ny*offsetDst;
-
-    // Curved path
-    const midX = (x1+x2)/2, midY = (y1+y2)/2;
-    const perpX = -ny * 30, perpY = nx * 30;
+    const arrowKey = arrowColors[edge.type] ? edge.type : 'default';
 
     g.append('path')
-      .attr('d', `M${x1},${y1} Q${midX+perpX},${midY+perpY} ${x2},${y2}`)
-      .attr('class', 'flow-edge')
-      .attr('stroke', color)
-      .attr('marker-end', `url(#${arrowId})`)
-      .attr('stroke-dasharray', edge.type === 'block' ? '4,3' : 'none');
+      .attr('d',`M${x1},${y1} Q${cx2},${cy2} ${x2},${y2}`)
+      .attr('fill','none')
+      .attr('stroke',col)
+      .attr('stroke-width',1.5)
+      .attr('opacity',0.55)
+      .attr('stroke-dasharray', edge.type==='block'?'5,3':'none')
+      .attr('marker-end',`url(#arr-${arrowKey})`);
 
-    // Edge label
-    if (edge.label) {
+    if(edge.label) {
       g.append('text')
-        .attr('x', midX + perpX)
-        .attr('y', midY + perpY - 4)
-        .attr('class', 'edge-label')
-        .attr('fill', color)
-        .attr('opacity', 0.7)
-        .text(truncate(edge.label, 18));
+        .attr('x',cx2).attr('y',cy2-5)
+        .attr('text-anchor','middle')
+        .attr('fill',col)
+        .attr('font-family',"'IBM Plex Mono',monospace")
+        .attr('font-size',9)
+        .attr('opacity',0.7)
+        .text(trunc(edge.label,20));
     }
   });
 
-  // Draw nodes
-  const nodeColors = {
-    internet: '#ff6b35', wan: '#ff6b35', internal: '#3d7fff',
-    lan: '#36d399', vpn: '#a855f7'
-  };
+  // ── Draw nodes ───────────────────────────────────────────────
+  const nodeColors = {internet:'#ff6b35',wan:'#ff6b35',internal:'#3d7fff',wireguard:'#a855f7',vpn_out:'#a855f7'};
 
-  const ng = g.selectAll('.node-group')
-    .data(allPositioned)
-    .join('g')
-    .attr('class', 'node-group')
-    .attr('transform', d => `translate(${d._x},${d._y})`);
+  const ng = g.selectAll('.ng').data(nodes.filter(n=>n._x!==undefined)).join('g')
+    .attr('class','ng').attr('transform',n=>`translate(${n._x},${n._y})`).attr('cursor','pointer');
 
   ng.append('rect')
-    .attr('class', 'node-rect')
-    .attr('x', -50).attr('y', -22)
-    .attr('width', 100).attr('height', 44)
-    .attr('fill', d => nodeColors[d.type] || '#3d7fff')
-    .attr('fill-opacity', 0.15)
-    .attr('stroke', d => nodeColors[d.type] || '#3d7fff')
-    .attr('stroke-width', 1.5);
+    .attr('x',-nodeW/2).attr('y',-nodeH/2).attr('width',nodeW).attr('height',nodeH).attr('rx',10)
+    .attr('fill', n=>nodeColors[n.type]||'#3d7fff').attr('fill-opacity',.12)
+    .attr('stroke',n=>nodeColors[n.type]||'#3d7fff').attr('stroke-width',1.5)
+    .style('filter','drop-shadow(0 3px 10px rgba(0,0,0,0.4))');
 
   ng.append('text')
-    .attr('class', 'node-label')
-    .attr('y', -4)
-    .attr('fill', d => nodeColors[d.type] || '#c8d4e8')
-    .text(d => truncate(d.label, 12));
+    .attr('text-anchor','middle').attr('y',-5)
+    .attr('fill',n=>nodeColors[n.type]||'#c8d4e8')
+    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',10).attr('font-weight',600)
+    .attr('letter-spacing','0.06em')
+    .text(n=>trunc(n.label,13));
 
   ng.append('text')
-    .attr('class', 'node-sublabel')
-    .attr('y', 10)
-    .text(d => d.ip ? truncate(d.ip, 16) : '');
+    .attr('text-anchor','middle').attr('y',9)
+    .attr('fill','rgba(200,212,232,0.45)')
+    .attr('font-family',"'IBM Plex Mono',monospace").attr('font-size',8.5)
+    .text(n=>trunc(n.ip||'',16));
 
   // Tooltip
-  const tooltip = document.getElementById('tooltip');
-  ng.on('mousemove', (event, d) => {
-    tooltip.style.display = 'block';
-    tooltip.style.left = (event.clientX + 12) + 'px';
-    tooltip.style.top = (event.clientY - 10) + 'px';
-    tooltip.innerHTML = `<strong>${d.label}</strong><br>Type: ${d.type}<br>${d.ip ? 'IP: ' + d.ip : ''}${d.subnet ? '/' + d.subnet : ''}`;
-  }).on('mouseleave', () => { tooltip.style.display = 'none'; });
+  const tt = document.getElementById('tooltip');
+  ng.on('mousemove',(ev,n)=>{
+    tt.style.display='block';
+    tt.style.left=(ev.clientX+12)+'px';
+    tt.style.top=(ev.clientY-10)+'px';
+    tt.innerHTML=`<strong>${n.label}</strong><br>Type: ${n.type}<br>${n.ip?'IP: '+n.ip+(n.subnet?'/'+n.subnet:''):''}`;
+  }).on('mouseleave',()=>{tt.style.display='none';});
 }
 
-function truncate(str, max) {
-  return str && str.length > max ? str.slice(0, max) + '…' : (str || '');
-}
+function trunc(s,n){ return s&&s.length>n?s.slice(0,n)+'…':(s||''); }
 
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════
 // TABS
-// ═══════════════════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${name}'`));
-  });
-  document.querySelectorAll('.tab-content').forEach(c => {
-    c.classList.toggle('active', c.id === `tab-${name}`);
-  });
-  // Re-render map on switch
-  if (name === 'flow' && appData) {
-    setTimeout(() => renderFlowMap(appData.traffic_flow), 50);
-  }
+// ═══════════════════════════════════
+function switchTab(name, clickedEl) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.getAttribute('onclick').includes(`'${name}'`)) t.classList.add('active'); });
+  const tc = document.getElementById(`tab-${name}`);
+  if(tc) tc.classList.add('active');
+  if(name==='flow' && appData) setTimeout(()=>renderFlowMap(appData.traffic_flow), 30);
 }
 </script>
 </body>
