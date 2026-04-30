@@ -89,15 +89,8 @@ if ! command -v git &>/dev/null; then
   log "Git installed"
 fi
 
-# ── Create directory layout under /srv/opnsense-analyzer ────
-info "Creating directory structure under ${INSTALL_DIR} ..."
-mkdir -p "${INSTALL_DIR}"
-mkdir -p "${LOGS_DIR}"
-log "Directories created:
-      ${INSTALL_DIR}/          ← source code + compose files
-      ${LOGS_DIR}/    ← container log output"
-
 # ── Clone / update repo into /srv/opnsense-analyzer ─────────
+# Note: INSTALL_DIR must not exist yet when cloning — data/logs created after.
 if [[ -d "${INSTALL_DIR}/.git" ]]; then
   info "Updating existing installation..."
   git -C "${INSTALL_DIR}" pull --ff-only
@@ -107,6 +100,13 @@ else
   git clone "$REPO_URL" "${INSTALL_DIR}"
   log "Repository cloned"
 fi
+
+# ── Create data directories inside the cloned repo ───────────
+info "Creating data directory structure..."
+mkdir -p "${LOGS_DIR}"
+log "Directories ready:
+      ${INSTALL_DIR}/          ← source code + compose files
+      ${LOGS_DIR}/  ← container log output"
 
 cd "${INSTALL_DIR}"
 
