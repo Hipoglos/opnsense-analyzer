@@ -27,7 +27,7 @@ Upload your `config.xml` — get instant analysis of firewall rules, VPN setting
 curl -fsSL https://raw.githubusercontent.com/Hipoglos/opnsense-analyzer/main/install.sh | sudo bash
 ```
 
-Open: **http://localhost:8080**
+Open: **http://localhost:8081**
 
 > **Custom port:** `PORT=9090 curl -fsSL ... | sudo bash`
 
