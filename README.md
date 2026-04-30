@@ -24,7 +24,7 @@ Upload your `config.xml` — get instant analysis of firewall rules, VPN setting
 ## 🚀 Quick Install (Debian 13 / any Debian)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/opnsense-analyzer/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Hipoglos/opnsense-analyzer/main/install.sh | sudo bash
 ```
 
 Open: **http://localhost:8080**
