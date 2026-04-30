@@ -36,7 +36,7 @@ Open: **http://localhost:8081**
 ## 🐳 Manual Docker
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/opnsense-analyzer
+git clone https://github.com/Hipoglos/opnsense-analyzer
 cd opnsense-analyzer
 docker compose up -d --build
 ```
