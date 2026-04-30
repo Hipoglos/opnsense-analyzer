@@ -15,7 +15,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-REPO_URL="https://github.com/YOUR_USERNAME/opnsense-analyzer"
+REPO_URL="https://github.com/Hipoglos/opnsense-analyzer"
 INSTALL_DIR="/srv/opnsense-analyzer"
 PORT="${PORT:-8080}"
 
